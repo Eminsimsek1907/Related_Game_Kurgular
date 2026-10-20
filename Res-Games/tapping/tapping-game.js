@@ -1,0 +1,1820 @@
+function vlsTapGameInit() {
+    const prevRoot = document.querySelector("#vls-tap-root");
+    const prevStyle = document.querySelector("#vls-tap-style");
+    if (prevRoot) prevRoot.remove();
+    if (prevStyle) prevStyle.remove();
+    const CONFIG = {
+        gameDuration: 10,
+        winThreshold: 30,
+        coinParticleCount: 5,
+        sparkCount: 4,
+        maxFxNodes: 140,
+        comboWindow: 450,
+        comboShowAt: 3,
+        comboHotAt: 8,
+        comboShakeEvery: 10,
+        lowTimeAt: 3,
+        confettiCount: 80,
+        ctaUrl: "<%CTAURL%>",
+        ctaText: "ALIŞVERİŞE BAŞLA",
+        couponCode: "KOD20",
+    };
+    const styleEl = document.createElement("style");
+    styleEl.id = "vls-tap-style";
+    styleEl.textContent = `
+#vls-tap-root {
+    --vls-gold: #FFB800;
+    --vls-gold-deep: #E6A600;
+    --vls-crimson: #8B1A1A;
+    --vls-shadow-soft: 0 0.15em 0.45em rgba(0, 0, 0, 0.35);
+    --vls-rad-pill: 2em;
+    --vls-rad-panel: 1em;
+    position: fixed;
+    inset: 0;
+    z-index: 999999;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    overflow: hidden;
+    box-sizing: border-box;
+    font-size: clamp(15px, 3.8vw, 20px);
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+    background: #0a3d6e;
+}
+#vls-tap-root *,
+#vls-tap-root *::before,
+#vls-tap-root *::after {
+    box-sizing: border-box;
+}
+#vls-bg-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    pointer-events: none;
+}
+#vls-tap-root[data-state="open"] {
+    opacity: 1;
+    animation: vlsOverlayIn 0.4s ease;
+}
+@keyframes vlsOverlayIn {
+    from {
+        opacity: 0;
+        transform: scale(1.03);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+#vls-tap-root[data-state="closing"] {
+    animation: vlsOverlayOut 0.42s ease forwards;
+    pointer-events: none;
+}
+@keyframes vlsOverlayOut {
+    to {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+}
+.vls-close {
+    position: absolute;
+    top: 1em;
+    right: 1em;
+    z-index: 20;
+    width: 2.4em;
+    height: 2.4em;
+    border: none;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.35);
+    color: #fff;
+    font-weight: 800;
+    font-size: 1.35em;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--vls-shadow-soft);
+}
+.vls-screen {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3.2em 1.25em 6.5em;
+    text-align: center;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(0.6em);
+}
+#vls-tap-root[data-screen="intro"] .vls-screen-intro:not([data-state="closing"]),
+#vls-tap-root[data-screen="game"] .vls-screen-game:not([data-state="closing"]),
+#vls-tap-root[data-screen="result"] .vls-screen-result:not([data-state="closing"]) {
+    animation: vlsScreenIn 0.48s ease forwards;
+    pointer-events: auto;
+}
+.vls-screen-intro[data-state="closing"],
+.vls-screen-game[data-state="closing"],
+.vls-screen-result[data-state="closing"] {
+    animation: vlsScreenOut 0.4s ease forwards;
+    pointer-events: none;
+}
+#vls-tap-root[data-screen="intro"] .vls-screen:not(.vls-screen-intro),
+#vls-tap-root[data-screen="game"] .vls-screen:not(.vls-screen-game),
+#vls-tap-root[data-screen="result"] .vls-screen:not(.vls-screen-result) {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(0.5em);
+    animation: none;
+}
+@keyframes vlsScreenIn {
+    from {
+        opacity: 0;
+        transform: translateY(0.85em) scale(0.98);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+@keyframes vlsScreenOut {
+    to {
+        opacity: 0;
+        transform: translateY(-0.5em) scale(0.98);
+    }
+}
+.vls-intro-inner {
+    width: 100%;
+    max-width: 22em;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.85em;
+}
+.vls-game-inner {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 24em;
+    margin: 0 auto;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 0;
+}
+.vls-result-inner {
+    width: 100%;
+    max-width: 22em;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75em;
+    position: relative;
+    z-index: 3;
+}
+.vls-title-main {
+    margin: 0;
+    font-weight: 900;
+    font-size: clamp(1.35em, 5.5vw, 1.75em);
+    line-height: 1.15;
+    color: #fff;
+    text-shadow:
+        0 0.06em 0 #5a4a00,
+        0 0.12em 0.35em rgba(0, 0, 0, 0.45),
+        0 0 0.65em rgba(255, 184, 0, 0.55);
+    letter-spacing: 0.02em;
+}
+.vls-instruction {
+    margin: 0;
+    font-size: 0.92em;
+    line-height: 1.45;
+    color: rgba(255, 255, 255, 0.95);
+    text-shadow: 0 0.08em 0.2em rgba(0, 0, 0, 0.5);
+    max-width: 19em;
+}
+.vls-instruction strong {
+    color: var(--vls-gold);
+    font-weight: 900;
+}
+.vls-cta-glow {
+    margin-top: 0.35em;
+    padding: 0.85em 1.6em;
+    border: none;
+    border-radius: var(--vls-rad-pill);
+    background: linear-gradient(180deg, var(--vls-gold) 0%, var(--vls-gold-deep) 100%);
+    color: #3a2500;
+    font-weight: 900;
+    font-size: 0.95em;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    box-shadow:
+        0 0.25em 0 #8B6914,
+        0 0 1.2em rgba(255, 184, 0, 0.65),
+        inset 0 0.08em 0 rgba(255, 255, 255, 0.45);
+    animation: vlsCtaPulse 2.2s ease-in-out infinite;
+}
+@keyframes vlsCtaPulse {
+    0%,
+    100% {
+        box-shadow:
+            0 0.25em 0 #8B6914,
+            0 0 1em rgba(255, 184, 0, 0.5),
+            inset 0 0.08em 0 rgba(255, 255, 255, 0.45);
+    }
+    50% {
+        box-shadow:
+            0 0.25em 0 #8B6914,
+            0 0 1.8em rgba(255, 184, 0, 0.95),
+            inset 0 0.08em 0 rgba(255, 255, 255, 0.55);
+    }
+}
+.vls-chest-stage {
+    perspective: 12em;
+    position: relative;
+    width: 11em;
+    height: 9em;
+    margin: 0.5em auto 0.25em;
+    animation: vlsFloat 2s ease-in-out infinite;
+}
+.vls-screen-game .vls-chest-stage {
+    width: 13em;
+    height: 10.5em;
+    margin-bottom: 0.5em;
+}
+@keyframes vlsFloat {
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-0.5em);
+    }
+}
+.vls-chest-halo {
+    position: absolute;
+    left: -40%;
+    top: -45%;
+    width: 180%;
+    height: 180%;
+    border-radius: 50%;
+    background: repeating-conic-gradient(from 0deg, rgba(255, 228, 140, 0.42) 0deg 9deg, rgba(255, 228, 140, 0) 9deg 30deg);
+    -webkit-mask-image: radial-gradient(circle, #000 18%, rgba(0, 0, 0, 0.6) 38%, transparent 68%);
+    mask-image: radial-gradient(circle, #000 18%, rgba(0, 0, 0, 0.6) 38%, transparent 68%);
+    opacity: 0.7;
+    pointer-events: none;
+    animation: vlsHaloSpin 14s linear infinite;
+}
+@keyframes vlsHaloSpin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+.vls-chest-glow {
+    position: absolute;
+    left: -15%;
+    top: -10%;
+    width: 130%;
+    height: 120%;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 236, 150, 0.85) 0%, rgba(255, 184, 0, 0.35) 40%, rgba(255, 184, 0, 0) 70%);
+    opacity: 0;
+    pointer-events: none;
+}
+.vls-chest-stage[data-hot="true"] .vls-chest-glow {
+    animation: vlsGlowPulse 0.35s ease-in-out infinite alternate;
+}
+@keyframes vlsGlowPulse {
+    from {
+        opacity: 0.45;
+        transform: scale(0.92);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1.08);
+    }
+}
+.vls-chest {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transform-origin: 50% 92%;
+}
+.vls-chest[data-tapped="true"] {
+    animation: vlsChestPop 0.18s ease-out forwards;
+}
+@keyframes vlsChestPop {
+    0% {
+        transform: scale(1, 1);
+    }
+    35% {
+        transform: scale(1.12, 0.9);
+    }
+    70% {
+        transform: scale(0.96, 1.06);
+    }
+    100% {
+        transform: scale(1, 1);
+    }
+}
+.vls-chest-svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    filter: drop-shadow(0 0.35em 0.5em rgba(0, 0, 0, 0.35));
+}
+.vls-svg-glint {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: vlsGlint 1.8s ease-in-out infinite;
+}
+.vls-svg-glint:nth-of-type(2) {
+    animation-delay: 0.6s;
+}
+.vls-svg-glint:nth-of-type(3) {
+    animation-delay: 1.2s;
+}
+@keyframes vlsGlint {
+    0%,
+    100% {
+        opacity: 0;
+        transform: scale(0.2) rotate(0deg);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1) rotate(45deg);
+    }
+}
+.vls-sparkle {
+    position: absolute;
+    color: var(--vls-gold);
+    font-size: 0.75em;
+    font-weight: 700;
+    text-shadow: 0 0 0.35em #fff;
+    animation: vlsSparkle 2.4s ease-in-out infinite;
+    pointer-events: none;
+    z-index: 2;
+}
+.vls-sparkle:nth-child(1) {
+    left: 8%;
+    top: 18%;
+    animation-delay: 0s;
+}
+.vls-sparkle:nth-child(2) {
+    right: 10%;
+    top: 22%;
+    animation-delay: 0.4s;
+}
+.vls-sparkle:nth-child(3) {
+    left: 18%;
+    bottom: 28%;
+    animation-delay: 0.8s;
+}
+.vls-sparkle:nth-child(4) {
+    right: 14%;
+    bottom: 32%;
+    animation-delay: 1.2s;
+}
+.vls-sparkle:nth-child(5) {
+    left: 42%;
+    top: 6%;
+    animation-delay: 0.2s;
+}
+@keyframes vlsSparkle {
+    0%,
+    100% {
+        transform: scale(0);
+        opacity: 0;
+    }
+    35% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    70% {
+        transform: scale(0.6);
+        opacity: 0.4;
+    }
+}
+.vls-screen-game .vls-chest-wrap {
+    cursor: pointer;
+    position: relative;
+    flex-shrink: 0;
+    padding: 0.75em 1.5em;
+    touch-action: manipulation;
+    outline: none;
+}
+.vls-screen-game .vls-chest-wrap:focus-visible {
+    outline: 0.15em dashed var(--vls-gold);
+    outline-offset: 0.2em;
+    border-radius: 1em;
+}
+.vls-fx-layer {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 10;
+}
+.vls-coin-burst {
+    position: absolute;
+    width: 0.95em;
+    height: 0.95em;
+    margin-left: -0.475em;
+    margin-top: -0.475em;
+    background: radial-gradient(circle at 32% 30%, #fffbe0 0%, #ffd84a 32%, #f0a800 66%, #a86b00 100%);
+    border-radius: 50%;
+    box-shadow:
+        inset 0 0 0 0.09em rgba(140, 90, 0, 0.55),
+        inset 0 0 0 0.2em rgba(255, 240, 170, 0.35),
+        0 0.08em 0.2em rgba(0, 0, 0, 0.35);
+    pointer-events: none;
+    animation: vlsCoinBurst 0.75s cubic-bezier(0.2, 0.7, 0.4, 1) forwards;
+}
+@keyframes vlsCoinBurst {
+    0% {
+        opacity: 1;
+        transform: translate(0, 0) scale(0.35) rotateY(0deg);
+    }
+    55% {
+        opacity: 1;
+        transform: translate(var(--vls-dx), var(--vls-dy)) scale(1) rotateY(300deg);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(var(--vls-dx), calc(var(--vls-dy) + 2em)) scale(0.7) rotateY(540deg);
+    }
+}
+.vls-spark {
+    position: absolute;
+    width: 0.8em;
+    height: 0.8em;
+    margin-left: -0.4em;
+    margin-top: -0.4em;
+    background: radial-gradient(circle, #ffffff 0%, #fff3b0 45%, #ffcc33 100%);
+    clip-path: polygon(50% 0%, 61% 39%, 100% 50%, 61% 61%, 50% 100%, 39% 61%, 0% 50%, 39% 39%);
+    pointer-events: none;
+    animation: vlsSparkFly 0.5s ease-out forwards;
+}
+@keyframes vlsSparkFly {
+    0% {
+        opacity: 1;
+        transform: translate(0, 0) scale(0.4) rotate(0deg);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(var(--vls-dx), var(--vls-dy)) scale(1.2) rotate(160deg);
+    }
+}
+.vls-tap-ring {
+    position: absolute;
+    width: 4em;
+    height: 4em;
+    margin-left: -2em;
+    margin-top: -2em;
+    border-radius: 50%;
+    border: 0.22em solid rgba(255, 220, 110, 0.95);
+    box-shadow:
+        0 0 0.6em rgba(255, 200, 60, 0.7),
+        inset 0 0 0.5em rgba(255, 240, 180, 0.6);
+    pointer-events: none;
+    animation: vlsTapRing 0.4s ease-out forwards;
+}
+@keyframes vlsTapRing {
+    0% {
+        opacity: 1;
+        transform: scale(0.2);
+    }
+    100% {
+        opacity: 0;
+        transform: scale(1.35);
+    }
+}
+.vls-score-pop {
+    position: absolute;
+    margin-left: -0.8em;
+    margin-top: -1.2em;
+    font-weight: 900;
+    font-size: 1.25em;
+    color: #fff3b0;
+    -webkit-text-stroke: 0.04em #7a4a00;
+    text-shadow:
+        0 0.08em 0 #b36b00,
+        0 0.12em 0.3em rgba(0, 0, 0, 0.55);
+    white-space: nowrap;
+    pointer-events: none;
+    animation: vlsScorePop 0.7s ease-out forwards;
+}
+.vls-score-pop[data-big="true"] {
+    font-size: 1.6em;
+    color: #ffe14a;
+}
+@keyframes vlsScorePop {
+    0% {
+        opacity: 0;
+        transform: translate(0, 0) scale(0.4) rotate(var(--vls-rot));
+    }
+    20% {
+        opacity: 1;
+        transform: translate(0, -0.6em) scale(1.25) rotate(var(--vls-rot));
+    }
+    100% {
+        opacity: 0;
+        transform: translate(var(--vls-dx), -3em) scale(1) rotate(var(--vls-rot));
+    }
+}
+.vls-combo-slot {
+    height: 2.8em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+}
+.vls-combo {
+    padding: 0.3em 0.95em;
+    border-radius: var(--vls-rad-pill);
+    background: linear-gradient(180deg, #ff6b35 0%, #d7263d 100%);
+    color: #fff;
+    font-weight: 900;
+    font-size: 1.15em;
+    letter-spacing: 0.05em;
+    text-shadow: 0 0.06em 0 rgba(0, 0, 0, 0.35);
+    box-shadow:
+        0 0.2em 0 #7a1020,
+        0 0 1em rgba(255, 107, 53, 0.65),
+        inset 0 0.08em 0 rgba(255, 255, 255, 0.4);
+    opacity: 0;
+}
+.vls-combo[data-visible="true"] {
+    animation: vlsComboPop 0.22s ease-out forwards;
+}
+.vls-combo[data-visible="false"] {
+    animation: vlsComboOut 0.3s ease forwards;
+}
+@keyframes vlsComboPop {
+    0% {
+        opacity: 1;
+        transform: scale(1.45) rotate(-4deg);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1) rotate(0deg);
+    }
+}
+@keyframes vlsComboOut {
+    from {
+        opacity: 1;
+        transform: scale(1);
+    }
+    to {
+        opacity: 0;
+        transform: scale(0.6) translateY(0.5em);
+    }
+}
+.vls-goal-banner {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 66%;
+    z-index: 11;
+    text-align: center;
+    font-weight: 900;
+    font-size: 1.7em;
+    color: #fff3b0;
+    -webkit-text-stroke: 0.04em #7a4a00;
+    text-shadow:
+        0 0.08em 0 #b36b00,
+        0 0 0.8em rgba(255, 184, 0, 0.9);
+    letter-spacing: 0.04em;
+    opacity: 0;
+    pointer-events: none;
+}
+.vls-goal-banner[data-show="true"] {
+    animation: vlsGoalBanner 1.5s ease-out forwards;
+}
+@keyframes vlsGoalBanner {
+    0% {
+        opacity: 0;
+        transform: scale(0.3);
+    }
+    15% {
+        opacity: 1;
+        transform: scale(1.2);
+    }
+    30% {
+        transform: scale(1);
+    }
+    75% {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+    100% {
+        opacity: 0;
+        transform: scale(0.95) translateY(-1em);
+    }
+}
+.vls-game-inner[data-shake="true"] {
+    animation: vlsShake 0.32s ease-in-out;
+}
+@keyframes vlsShake {
+    0%,
+    100% {
+        transform: translate(0, 0);
+    }
+    20% {
+        transform: translate(-0.35em, 0.15em) rotate(-1deg);
+    }
+    40% {
+        transform: translate(0.35em, -0.15em) rotate(1deg);
+    }
+    60% {
+        transform: translate(-0.25em, 0.1em);
+    }
+    80% {
+        transform: translate(0.2em, -0.05em);
+    }
+}
+.vls-timer {
+    position: absolute;
+    top: 2.4em;
+    left: 1.25em;
+    right: 5.2em;
+    height: 1.15em;
+    z-index: 12;
+    border-radius: var(--vls-rad-pill);
+    background: rgba(0, 0, 0, 0.45);
+    box-shadow:
+        inset 0 0.1em 0.25em rgba(0, 0, 0, 0.5),
+        0 0 0 0.08em rgba(255, 184, 0, 0.5);
+    overflow: hidden;
+}
+.vls-timer-fill {
+    position: absolute;
+    inset: 0.2em;
+    border-radius: var(--vls-rad-pill);
+    background: linear-gradient(90deg, #2fd27a 0%, #a6ee4f 100%);
+    box-shadow: inset 0 0.1em 0 rgba(255, 255, 255, 0.45);
+    transform-origin: 0 50%;
+}
+.vls-timer[data-running="true"] .vls-timer-fill {
+    animation-name: vlsTimerDrain;
+    animation-timing-function: linear;
+    animation-fill-mode: forwards;
+}
+.vls-timer[data-low="true"] {
+    animation: vlsTimerAlarm 0.5s ease-in-out infinite alternate;
+}
+.vls-timer[data-low="true"] .vls-timer-fill {
+    background: linear-gradient(90deg, #ff3b3b 0%, #ff9a3b 100%);
+}
+@keyframes vlsTimerDrain {
+    from {
+        transform: scaleX(1);
+    }
+    to {
+        transform: scaleX(0);
+    }
+}
+@keyframes vlsTimerAlarm {
+    from {
+        transform: scale(1);
+    }
+    to {
+        transform: scale(1.03, 1.15);
+    }
+}
+.vls-hud-num[data-low="true"] {
+    color: #ff6b6b;
+}
+.vls-hud-goal {
+    font-size: 0.55em;
+    font-weight: 800;
+    color: rgba(255, 255, 255, 0.6);
+}
+.vls-hud-block[data-done="true"] .vls-hud-num {
+    color: var(--vls-gold);
+}
+.vls-hud-block[data-done="true"] .vls-hud-goal {
+    color: var(--vls-gold);
+}
+.vls-hud {
+    position: absolute;
+    left: 50%;
+    bottom: 1.25em;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    background: rgba(0, 0, 0, 0.42);
+    border-radius: var(--vls-rad-panel);
+    padding: 0.65em 1.1em;
+    box-shadow: var(--vls-shadow-soft), 0 0 0 0.06em rgba(255, 184, 0, 0.35);
+    z-index: 12;
+    min-width: 14em;
+}
+.vls-hud-block {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 5.5em;
+}
+.vls-hud-num {
+    font-weight: 900;
+    font-size: 1.65em;
+    line-height: 1;
+    color: #fff;
+    text-shadow: 0 0.06em 0.15em rgba(0, 0, 0, 0.4);
+}
+.vls-hud-label {
+    margin-top: 0.2em;
+    font-size: 0.68em;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: rgba(255, 255, 255, 0.75);
+}
+.vls-hud-divider {
+    width: 0.08em;
+    align-self: stretch;
+    margin: 0 0.5em;
+    background: linear-gradient(180deg, transparent, rgba(255, 184, 0, 0.55), transparent);
+    border-radius: 0.04em;
+}
+.vls-confetti-layer {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 1;
+}
+.vls-confetti {
+    position: absolute;
+    top: -0.5em;
+    width: 0.45em;
+    height: 0.65em;
+    border-radius: 0.08em;
+    animation-name: vlsConfettiFall;
+    animation-timing-function: linear;
+    animation-fill-mode: forwards;
+}
+@keyframes vlsConfettiFall {
+    0% {
+        transform: translateY(0) rotate(0deg);
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(110vh) rotate(720deg);
+        opacity: 0.85;
+    }
+}
+.vls-trophy {
+    position: relative;
+    width: 6.5em;
+    height: 6.5em;
+    margin: 0 auto 0.15em;
+    animation: vlsTrophyIn 0.7s cubic-bezier(0.3, 1.6, 0.5, 1) both;
+}
+.vls-trophy svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+    overflow: visible;
+    filter: drop-shadow(0 0.3em 0.45em rgba(0, 0, 0, 0.4));
+}
+@keyframes vlsTrophyIn {
+    from {
+        opacity: 0;
+        transform: scale(0.2) rotate(-20deg);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) rotate(0deg);
+    }
+}
+.vls-coupon-row {
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
+    gap: 0.5em;
+    margin-top: 0.35em;
+}
+.vls-copy-btn {
+    padding: 0.45em 1em;
+    border: none;
+    border-radius: var(--vls-rad-pill);
+    background: #fff;
+    color: #3a2500;
+    font-weight: 900;
+    font-size: 0.82em;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    box-shadow: 0 0.2em 0 rgba(0, 0, 0, 0.3);
+}
+.vls-copy-btn[data-copied="true"] {
+    background: #2fd27a;
+    color: #fff;
+    animation: vlsCopied 0.3s ease-out;
+}
+@keyframes vlsCopied {
+    0% {
+        transform: scale(0.85);
+    }
+    60% {
+        transform: scale(1.1);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+.vls-copy-helper {
+    position: absolute;
+    left: -9999px;
+    top: 0;
+    opacity: 0;
+}
+.vls-result-title {
+    margin: 0;
+    font-weight: 900;
+    font-size: clamp(1.2em, 4.8vw, 1.55em);
+    color: #fff;
+    text-shadow: 0 0.1em 0.3em rgba(0, 0, 0, 0.45);
+}
+.vls-result-sub {
+    margin: 0;
+    font-size: 0.95em;
+    line-height: 1.4;
+    color: rgba(255, 255, 255, 0.92);
+    text-shadow: 0 0.06em 0.2em rgba(0, 0, 0, 0.4);
+    max-width: 18em;
+}
+.vls-cta-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 0.5em;
+    padding: 0.85em 1.5em;
+    border-radius: var(--vls-rad-pill);
+    background: linear-gradient(180deg, var(--vls-gold) 0%, var(--vls-gold-deep) 100%);
+    color: #3a2500;
+    font-weight: 900;
+    font-size: 0.95em;
+    text-decoration: none;
+    letter-spacing: 0.03em;
+    box-shadow:
+        0 0.22em 0 #8B6914,
+        0 0 1em rgba(255, 184, 0, 0.55);
+}
+.vls-coupon-pill {
+    display: flex;
+    align-items: center;
+    padding: 0.45em 1em;
+    border-radius: var(--vls-rad-pill);
+    background: rgba(0, 0, 0, 0.35);
+    border: 0.1em dashed var(--vls-gold);
+    color: var(--vls-gold);
+    font-weight: 800;
+    font-size: 0.88em;
+    letter-spacing: 0.08em;
+}
+.vls-retry-btn {
+    margin-top: 0.5em;
+    padding: 0.85em 1.6em;
+    border: 0.12em solid var(--vls-gold);
+    border-radius: var(--vls-rad-pill);
+    background: rgba(255, 255, 255, 0.12);
+    color: #fff;
+    font-weight: 800;
+    font-size: 0.92em;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    box-shadow: 0 0 0.8em rgba(255, 184, 0, 0.25);
+}
+.vls-screen-result[data-result="lose"] .vls-trophy,
+.vls-screen-result[data-result="lose"] .vls-cta-link,
+.vls-screen-result[data-result="lose"] .vls-coupon-row {
+    display: none;
+}
+.vls-screen-result[data-result="win"] .vls-retry-btn,
+.vls-screen-result[data-result="win"] .vls-lose-only {
+    display: none;
+}
+.vls-lose-chest-wrap {
+    margin: 0.35em 0 0.15em;
+}
+@media (max-width: 767px) {
+    .vls-screen {
+        padding: 2.8em 1em 7em;
+    }
+    .vls-hud {
+        min-width: 12.5em;
+        padding: 0.55em 0.85em;
+    }
+    .vls-hud-num {
+        font-size: 1.5em;
+    }
+    .vls-goal-banner {
+        font-size: 1.45em;
+    }
+}
+@media (min-width: 768px) {
+    #vls-tap-root {
+        font-size: clamp(16px, 2.2vw, 19px);
+    }
+    .vls-intro-inner,
+    .vls-result-inner {
+        max-width: 24em;
+    }
+    .vls-game-inner {
+        max-width: 28em;
+    }
+    .vls-timer {
+        left: 50%;
+        right: auto;
+        width: 24em;
+        margin-left: -12em;
+    }
+}
+@media (min-width: 1024px) {
+    #vls-tap-root {
+        font-size: 18px;
+    }
+    .vls-chest-stage {
+        width: 12em;
+        height: 9.5em;
+    }
+    .vls-screen-game .vls-chest-stage {
+        width: 14em;
+        height: 11em;
+    }
+}
+@media (pointer: coarse) {
+    .vls-close {
+        width: 2.85em;
+        height: 2.85em;
+        font-size: 1.45em;
+    }
+    .vls-screen-game .vls-chest-stage {
+        width: 14.5em;
+        height: 11.5em;
+    }
+    .vls-cta-glow,
+    .vls-cta-link,
+    .vls-retry-btn {
+        min-height: 3.1em;
+        padding-left: 1.85em;
+        padding-right: 1.85em;
+    }
+    .vls-hud {
+        min-width: 16em;
+        padding: 0.75em 1.25em;
+    }
+    .vls-timer {
+        top: 2.95em;
+        right: 6.2em;
+    }
+}
+`;
+    (document.head || document.documentElement).appendChild(styleEl);
+    const starPoints = (cx, cy, r) =>
+        [
+            [cx, cy - r],
+            [cx + r * 0.28, cy - r * 0.28],
+            [cx + r, cy],
+            [cx + r * 0.28, cy + r * 0.28],
+            [cx, cy + r],
+            [cx - r * 0.28, cy + r * 0.28],
+            [cx - r, cy],
+            [cx - r * 0.28, cy - r * 0.28],
+        ]
+            .map((p) => p.join(","))
+            .join(" ");
+    const coinSvg = (uid, cx, cy, r) => `
+<ellipse cx="${cx}" cy="${cy}" rx="${r}" ry="${r * 0.55}" fill="url(#${uid}-coin)" stroke="#a86b00" stroke-width="1.5"/>
+<ellipse cx="${cx}" cy="${cy}" rx="${r * 0.62}" ry="${r * 0.32}" fill="none" stroke="rgba(255, 250, 210, 0.75)" stroke-width="1.2"/>`;
+    const pileCoins = [
+        [110, 50, 8],
+        [92, 52, 8],
+        [102, 58, 11],
+        [84, 62, 10],
+        [120, 62, 10],
+        [138, 64, 10],
+        [66, 66, 10],
+        [96, 70, 10],
+        [50, 72, 9],
+        [76, 72, 9],
+        [116, 72, 9],
+        [152, 72, 9],
+        [132, 74, 9],
+    ];
+    const chestSvg = (uid, locked) => `
+<svg class="vls-chest-svg" viewBox="0 0 200 170" aria-hidden="true">
+<defs>
+<linearGradient id="${uid}-wood" x1="0" y1="0" x2="0" y2="1">
+<stop offset="0" stop-color="#b8322a"/>
+<stop offset="0.5" stop-color="#8b1a1a"/>
+<stop offset="1" stop-color="#560c0c"/>
+</linearGradient>
+<linearGradient id="${uid}-gold" x1="0" y1="0" x2="1" y2="1">
+<stop offset="0" stop-color="#fff2a8"/>
+<stop offset="0.35" stop-color="#ffc928"/>
+<stop offset="0.7" stop-color="#e09a00"/>
+<stop offset="1" stop-color="#9a6400"/>
+</linearGradient>
+<linearGradient id="${uid}-inner" x1="0" y1="0" x2="0" y2="1">
+<stop offset="0" stop-color="#4a0a0a"/>
+<stop offset="1" stop-color="#1a0202"/>
+</linearGradient>
+<radialGradient id="${uid}-glow" cx="0.5" cy="0.6" r="0.5">
+<stop offset="0" stop-color="#fff6c0" stop-opacity="0.95"/>
+<stop offset="0.5" stop-color="#ffcc33" stop-opacity="0.45"/>
+<stop offset="1" stop-color="#ffcc33" stop-opacity="0"/>
+</radialGradient>
+<radialGradient id="${uid}-coin" cx="0.35" cy="0.3" r="0.75">
+<stop offset="0" stop-color="#fffbe0"/>
+<stop offset="0.4" stop-color="#ffd84a"/>
+<stop offset="1" stop-color="#c47f00"/>
+</radialGradient>
+<linearGradient id="${uid}-steel" x1="0" y1="0" x2="1" y2="0">
+<stop offset="0" stop-color="#8e93a6"/>
+<stop offset="0.5" stop-color="#eef0f6"/>
+<stop offset="1" stop-color="#7a7f92"/>
+</linearGradient>
+</defs>
+<ellipse cx="100" cy="156" rx="80" ry="9" fill="rgba(0, 0, 0, 0.35)"/>
+${
+    locked
+        ? `
+<path d="M28 84 L28 60 Q100 12 172 60 L172 84 Z" fill="url(#${uid}-wood)"/>
+<path d="M36 62 Q100 24 164 62" fill="none" stroke="rgba(255, 255, 255, 0.18)" stroke-width="4" stroke-linecap="round"/>
+<path d="M44 49 L58 43 L58 84 L44 84 Z" fill="url(#${uid}-gold)" stroke="#8a5a00" stroke-width="1.2"/>
+<path d="M142 43 L156 49 L156 84 L142 84 Z" fill="url(#${uid}-gold)" stroke="#8a5a00" stroke-width="1.2"/>
+<path d="M28 84 L28 60 Q100 12 172 60 L172 84" fill="none" stroke="url(#${uid}-gold)" stroke-width="4" stroke-linejoin="round"/>`
+        : `
+<ellipse cx="100" cy="56" rx="92" ry="58" fill="url(#${uid}-glow)"/>
+<path d="M30 82 L40 20 Q100 -2 160 20 L170 82 Z" fill="url(#${uid}-wood)" stroke="url(#${uid}-gold)" stroke-width="4" stroke-linejoin="round"/>
+<path d="M44 80 L51 30 Q100 13 149 30 L156 80 Z" fill="url(#${uid}-inner)"/>
+<path d="M52 24 L63 21 L60 80 L49 80 Z" fill="url(#${uid}-gold)" opacity="0.85"/>
+<path d="M137 21 L148 24 L151 80 L140 80 Z" fill="url(#${uid}-gold)" opacity="0.85"/>
+<path d="M32 80 Q46 58 70 60 Q86 46 104 50 Q126 44 142 58 Q160 60 168 80 Z" fill="url(#${uid}-coin)" stroke="#a86b00" stroke-width="1.2"/>
+${pileCoins.map((c) => coinSvg(uid, c[0], c[1], c[2])).join("")}
+<path d="M65 56 L72 47 L79 56 L72 66 Z" fill="#ff3b5c" stroke="#8a0020" stroke-width="1.2"/>
+<path d="M68 55 L72 50 L74 55 Z" fill="rgba(255, 255, 255, 0.7)"/>
+<path d="M127 54 L134 45 L141 54 L134 64 Z" fill="#3bc8ff" stroke="#00507a" stroke-width="1.2"/>
+<path d="M130 53 L134 48 L136 53 Z" fill="rgba(255, 255, 255, 0.7)"/>`
+}
+<rect x="28" y="82" width="144" height="66" rx="6" fill="url(#${uid}-wood)"/>
+<path d="M28 104 H172 M28 126 H172" stroke="rgba(0, 0, 0, 0.28)" stroke-width="2"/>
+<rect x="32" y="88" width="136" height="5" rx="2.5" fill="rgba(255, 255, 255, 0.12)"/>
+<rect x="44" y="84" width="14" height="60" fill="url(#${uid}-gold)" stroke="#8a5a00" stroke-width="1"/>
+<rect x="142" y="84" width="14" height="60" fill="url(#${uid}-gold)" stroke="#8a5a00" stroke-width="1"/>
+${[94, 112, 130]
+    .map((y) => `<circle cx="51" cy="${y}" r="2.6" fill="#fff2a8" stroke="#8a5a00" stroke-width="1"/><circle cx="149" cy="${y}" r="2.6" fill="#fff2a8" stroke="#8a5a00" stroke-width="1"/>`)
+    .join("")}
+<rect x="22" y="76" width="156" height="11" rx="4" fill="url(#${uid}-gold)" stroke="#8a5a00" stroke-width="1.5"/>
+<rect x="22" y="142" width="156" height="9" rx="3" fill="url(#${uid}-gold)" stroke="#8a5a00" stroke-width="1.5"/>
+${
+    locked
+        ? `
+<path d="M89 88 V74 Q89 60 100 60 Q111 60 111 74 V88" fill="none" stroke="url(#${uid}-steel)" stroke-width="6" stroke-linecap="round"/>
+<rect x="82" y="84" width="36" height="30" rx="6" fill="url(#${uid}-gold)" stroke="#8a5a00" stroke-width="1.5"/>
+<circle cx="100" cy="96" r="4" fill="#3a1a00"/>
+<path d="M98 98 L96 107 H104 L102 98 Z" fill="#3a1a00"/>`
+        : `
+<path d="M86 87 H114 V110 Q100 122 86 110 Z" fill="url(#${uid}-gold)" stroke="#8a5a00" stroke-width="1.5"/>
+<circle cx="100" cy="97" r="4" fill="#3a1a00"/>
+<path d="M98 99 L96 108 H104 L102 99 Z" fill="#3a1a00"/>
+<g class="vls-glints">
+<polygon class="vls-svg-glint" points="${starPoints(88, 48, 7)}" fill="#ffffff"/>
+<polygon class="vls-svg-glint" points="${starPoints(122, 44, 6)}" fill="#ffffff"/>
+<polygon class="vls-svg-glint" points="${starPoints(150, 62, 6)}" fill="#ffffff"/>
+</g>`
+}
+</svg>`;
+    const trophySvg = `
+<svg viewBox="0 0 120 120">
+<defs>
+<linearGradient id="vlstr-gold" x1="0" y1="0" x2="1" y2="0">
+<stop offset="0" stop-color="#a86b00"/>
+<stop offset="0.3" stop-color="#ffc928"/>
+<stop offset="0.5" stop-color="#fff4b0"/>
+<stop offset="0.7" stop-color="#ffc928"/>
+<stop offset="1" stop-color="#a86b00"/>
+</linearGradient>
+<linearGradient id="vlstr-base" x1="0" y1="0" x2="0" y2="1">
+<stop offset="0" stop-color="#8b1a1a"/>
+<stop offset="1" stop-color="#3a0606"/>
+</linearGradient>
+<radialGradient id="vlstr-glow" cx="0.5" cy="0.5" r="0.5">
+<stop offset="0" stop-color="#fff6c0" stop-opacity="0.9"/>
+<stop offset="1" stop-color="#fff6c0" stop-opacity="0"/>
+</radialGradient>
+</defs>
+<circle cx="60" cy="46" r="60" fill="url(#vlstr-glow)"/>
+<path d="M32 26 C10 26 10 58 40 62" fill="none" stroke="#e0a000" stroke-width="7" stroke-linecap="round"/>
+<path d="M88 26 C110 26 110 58 80 62" fill="none" stroke="#e0a000" stroke-width="7" stroke-linecap="round"/>
+<path d="M28 16 H92 V36 C92 60 78 74 60 74 C42 74 28 60 28 36 Z" fill="url(#vlstr-gold)" stroke="#8a5a00" stroke-width="2"/>
+<path d="M37 24 V38 C37 52 42 61 50 66" fill="none" stroke="rgba(255, 255, 255, 0.6)" stroke-width="4" stroke-linecap="round"/>
+<ellipse cx="60" cy="16" rx="32" ry="5" fill="#ffe680" stroke="#8a5a00" stroke-width="2"/>
+<polygon points="60,30 63.5,38.5 72.5,39 65.5,45 68,54 60,49 52,54 54.5,45 47.5,39 56.5,38.5" fill="#fffbe6" stroke="#c47f00" stroke-width="1.2"/>
+<rect x="54" y="74" width="12" height="12" fill="url(#vlstr-gold)"/>
+<rect x="42" y="86" width="36" height="8" rx="3" fill="url(#vlstr-gold)" stroke="#8a5a00" stroke-width="1.5"/>
+<rect x="34" y="94" width="52" height="16" rx="3" fill="url(#vlstr-base)" stroke="#2a0404" stroke-width="1.5"/>
+<rect x="46" y="98" width="28" height="8" rx="2" fill="url(#vlstr-gold)"/>
+<g class="vls-glints">
+<polygon class="vls-svg-glint" points="${starPoints(36, 20, 7)}" fill="#ffffff"/>
+<polygon class="vls-svg-glint" points="${starPoints(86, 50, 6)}" fill="#ffffff"/>
+<polygon class="vls-svg-glint" points="${starPoints(66, 64, 5)}" fill="#ffffff"/>
+</g>
+</svg>`;
+    const root = document.createElement("div");
+    root.id = "vls-tap-root";
+    root.dataset.state = "open";
+    root.dataset.screen = "intro";
+    root.innerHTML = `
+<canvas id="vls-bg-canvas" aria-hidden="true"></canvas>
+<button type="button" class="vls-close" aria-label="Kapat">×</button>
+<section class="vls-screen vls-screen-intro" data-screen="intro">
+<div class="vls-intro-inner">
+<div class="vls-chest-stage">
+<div class="vls-chest-halo" aria-hidden="true"></div>
+<div class="vls-chest vls-chest--open" data-variant="game">
+<span class="vls-sparkle" aria-hidden="true">✦</span>
+<span class="vls-sparkle" aria-hidden="true">✦</span>
+<span class="vls-sparkle" aria-hidden="true">✦</span>
+<span class="vls-sparkle" aria-hidden="true">✦</span>
+<span class="vls-sparkle" aria-hidden="true">✦</span>
+${chestSvg("vlsci", false)}
+</div>
+</div>
+<h1 class="vls-title-main">Hazineyi Yakala!</h1>
+<p class="vls-instruction">Sandığa olabildiğince hızlı dokun! ${CONFIG.gameDuration} saniyede en az <strong>${CONFIG.winThreshold}</strong> dokunuşa ulaş, hızlı dokunarak kombo yap ve indirim kodunu kap.</p>
+<button type="button" class="vls-cta-glow" id="vls-start-btn">OYUNU BAŞLAT</button>
+</div>
+</section>
+<section class="vls-screen vls-screen-game" data-screen="game">
+<div class="vls-timer" id="vls-timer" aria-hidden="true"><div class="vls-timer-fill" id="vls-timer-fill"></div></div>
+<div class="vls-game-inner" id="vls-game-inner">
+<div class="vls-combo-slot"><div class="vls-combo" id="vls-combo" aria-live="polite"></div></div>
+<div class="vls-chest-wrap" id="vls-tap-target" role="button" tabindex="0" aria-label="Sandığa dokun">
+<div class="vls-chest-stage" id="vls-game-stage">
+<div class="vls-chest-glow" aria-hidden="true"></div>
+<div class="vls-chest-halo" aria-hidden="true"></div>
+<div class="vls-chest vls-chest--open" id="vls-game-chest" data-variant="game">
+<span class="vls-sparkle" aria-hidden="true">✦</span>
+<span class="vls-sparkle" aria-hidden="true">✦</span>
+<span class="vls-sparkle" aria-hidden="true">✦</span>
+<span class="vls-sparkle" aria-hidden="true">✦</span>
+<span class="vls-sparkle" aria-hidden="true">✦</span>
+${chestSvg("vlscg", false)}
+</div>
+</div>
+</div>
+</div>
+<div class="vls-goal-banner" id="vls-goal-banner" aria-hidden="true">HEDEF TAMAM! 🎯</div>
+<div class="vls-fx-layer" id="vls-fx-game"></div>
+<div class="vls-hud">
+<div class="vls-hud-block">
+<span class="vls-hud-num" id="vls-hud-time">${CONFIG.gameDuration}</span>
+<span class="vls-hud-label">Kalan Süre</span>
+</div>
+<div class="vls-hud-divider"></div>
+<div class="vls-hud-block" id="vls-hud-taps-block">
+<span class="vls-hud-num"><span id="vls-hud-taps">0</span><span class="vls-hud-goal">/${CONFIG.winThreshold}</span></span>
+<span class="vls-hud-label">Dokunuş</span>
+</div>
+</div>
+</section>
+<section class="vls-screen vls-screen-result" data-screen="result" data-result="win">
+<div class="vls-confetti-layer" id="vls-confetti-root"></div>
+<div class="vls-result-inner">
+<div class="vls-trophy" aria-hidden="true">${trophySvg}</div>
+<div class="vls-lose-chest-wrap vls-lose-only">
+<div class="vls-chest-stage">
+<div class="vls-chest vls-chest--locked" id="vls-result-chest">
+${chestSvg("vlscr", true)}
+</div>
+</div>
+</div>
+<h2 class="vls-result-title" id="vls-result-title">Tebrikler! 🎉</h2>
+<p class="vls-result-sub" id="vls-result-sub"></p>
+<div class="vls-coupon-row">
+<div class="vls-coupon-pill" id="vls-coupon-pill"></div>
+<button type="button" class="vls-copy-btn" id="vls-copy-btn">KOPYALA</button>
+</div>
+<a class="vls-cta-link" id="vls-result-cta" href="#">ALIŞVERİŞE BAŞLA</a>
+<button type="button" class="vls-retry-btn" id="vls-retry-btn">TEKRAR DENE</button>
+</div>
+</section>
+`;
+    (document.body || document.documentElement).appendChild(root);
+    const canvas = root.querySelector("#vls-bg-canvas");
+    const ctx = canvas && canvas.getContext ? canvas.getContext("2d") : null;
+    const closeBtn = root.querySelector(".vls-close");
+    const introScreen = root.querySelector(".vls-screen-intro");
+    const gameScreen = root.querySelector(".vls-screen-game");
+    const resultScreen = root.querySelector(".vls-screen-result");
+    const startBtn = root.querySelector("#vls-start-btn");
+    const tapTarget = root.querySelector("#vls-tap-target");
+    const gameChest = root.querySelector("#vls-game-chest");
+    const fxLayer = root.querySelector("#vls-fx-game");
+    const hudTime = root.querySelector("#vls-hud-time");
+    const hudTaps = root.querySelector("#vls-hud-taps");
+    const resultTitle = root.querySelector("#vls-result-title");
+    const resultSub = root.querySelector("#vls-result-sub");
+    const resultCta = root.querySelector("#vls-result-cta");
+    const couponPill = root.querySelector("#vls-coupon-pill");
+    const retryBtn = root.querySelector("#vls-retry-btn");
+    const confettiRoot = root.querySelector("#vls-confetti-root");
+    const copyBtn = root.querySelector("#vls-copy-btn");
+    const gameInner = root.querySelector("#vls-game-inner");
+    const gameStage = root.querySelector("#vls-game-stage");
+    const comboEl = root.querySelector("#vls-combo");
+    const goalBanner = root.querySelector("#vls-goal-banner");
+    const timerEl = root.querySelector("#vls-timer");
+    const timerFill = root.querySelector("#vls-timer-fill");
+    const hudTapsBlock = root.querySelector("#vls-hud-taps-block");
+    resultCta.href = CONFIG.ctaUrl.indexOf("<%") === -1 ? CONFIG.ctaUrl : "#";
+    resultCta.textContent = CONFIG.ctaText;
+    couponPill.textContent = CONFIG.couponCode;
+    let tapCount = 0;
+    let timeLeft = CONFIG.gameDuration;
+    let gameTimerId = null;
+    let comboTimerId = null;
+    let combo = 0;
+    let bestCombo = 0;
+    let lastTapAt = 0;
+    let audioCtx = null;
+    let rafId = null;
+    let cloudT = 0;
+    let viewW = 1;
+    let viewH = 1;
+    let resizeListener = null;
+    let stopCanvasLoop = () => {};
+    const getAudio = () => {
+        if (audioCtx) return audioCtx;
+        try {
+            const AC = window.AudioContext || window.webkitAudioContext;
+            if (AC) audioCtx = new AC();
+        } catch (err) {
+            audioCtx = null;
+        }
+        return audioCtx;
+    };
+    const playTone = (freq, duration, type, volume, delay, slideTo) => {
+        const ac = getAudio();
+        if (!ac) return;
+        try {
+            if (ac.state === "suspended") ac.resume();
+            const t = ac.currentTime + (delay || 0);
+            const osc = ac.createOscillator();
+            const gain = ac.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, t);
+            if (slideTo) osc.frequency.exponentialRampToValueAtTime(slideTo, t + duration);
+            gain.gain.setValueAtTime(0.0001, t);
+            gain.gain.exponentialRampToValueAtTime(volume, t + 0.012);
+            gain.gain.exponentialRampToValueAtTime(0.0001, t + duration);
+            osc.connect(gain);
+            gain.connect(ac.destination);
+            osc.start(t);
+            osc.stop(t + duration + 0.03);
+        } catch (err) {}
+    };
+    const SOUNDS = {
+        start: () => {
+            [523, 659, 784, 1047].forEach((f, i) => playTone(f, 0.16, "triangle", 0.16, i * 0.08));
+        },
+        tap: (level) => {
+            const base = 520 + Math.min(level, 24) * 22;
+            playTone(base, 0.08, "triangle", 0.14, 0, base * 1.5);
+            playTone(base * 2.5, 0.06, "sine", 0.05, 0.015);
+        },
+        tick: () => {
+            playTone(1046, 0.07, "square", 0.06);
+        },
+        goal: () => {
+            [784, 988, 1175, 1568].forEach((f, i) => playTone(f, 0.14, "square", 0.07, i * 0.06));
+        },
+        combo: () => {
+            playTone(660, 0.18, "sawtooth", 0.06, 0, 1320);
+        },
+        win: () => {
+            [523, 659, 784, 1047, 1319].forEach((f, i) => playTone(f, 0.22, "triangle", 0.16, i * 0.1));
+            [523, 659, 784].forEach((f) => playTone(f, 0.7, "sine", 0.08, 0.55));
+        },
+        lose: () => {
+            playTone(392, 0.35, "sawtooth", 0.07, 0, 262);
+            playTone(294, 0.5, "sawtooth", 0.07, 0.3, 147);
+        },
+        copy: () => {
+            playTone(1200, 0.08, "sine", 0.12);
+            playTone(1600, 0.1, "sine", 0.1, 0.07);
+        },
+    };
+    if (canvas && ctx) {
+        const skyStars = Array.from({ length: 40 }, () => ({
+            x: Math.random(),
+            y: Math.random() * 0.4,
+            r: 0.6 + Math.random() * 1.6,
+            p: Math.random() * Math.PI * 2,
+        }));
+        const groundCoins = Array.from({ length: 14 }, () => ({
+            x: Math.random(),
+            y: 0.8 + Math.random() * 0.18,
+            r: 0.7 + Math.random() * 0.6,
+            p: Math.random() * Math.PI * 2,
+        }));
+        const drawLayer = (topColor, bottomColor, topY, buildPath) => {
+            const lg = ctx.createLinearGradient(0, topY, 0, viewH);
+            lg.addColorStop(0, topColor);
+            lg.addColorStop(1, bottomColor);
+            ctx.fillStyle = lg;
+            ctx.beginPath();
+            buildPath(viewW, viewH);
+            ctx.closePath();
+            ctx.fill();
+        };
+        const drawPuff = (px, py, sc) => {
+            ctx.fillStyle = "rgba(150, 190, 225, 0.55)";
+            ctx.beginPath();
+            ctx.arc(px, py + 5 * sc, 18 * sc, 0, Math.PI * 2);
+            ctx.arc(px + 22 * sc, py + sc, 22 * sc, 0, Math.PI * 2);
+            ctx.arc(px + 48 * sc, py + 5 * sc, 16 * sc, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = "rgba(255, 255, 255, 0.92)";
+            ctx.beginPath();
+            ctx.arc(px, py, 18 * sc, 0, Math.PI * 2);
+            ctx.arc(px + 22 * sc, py - 4 * sc, 22 * sc, 0, Math.PI * 2);
+            ctx.arc(px + 48 * sc, py, 16 * sc, 0, Math.PI * 2);
+            ctx.fill();
+        };
+        const drawScene = () => {
+            const w = viewW;
+            const h = viewH;
+            const unit = Math.min(w, h) / 400;
+            const sky = ctx.createLinearGradient(0, 0, 0, h);
+            sky.addColorStop(0, "#08204a");
+            sky.addColorStop(0.35, "#1a5fa3");
+            sky.addColorStop(0.62, "#63c3e0");
+            sky.addColorStop(0.8, "#ffe3a0");
+            ctx.fillStyle = sky;
+            ctx.fillRect(0, 0, w, h);
+            const sunX = w * 0.5;
+            const sunY = h * 0.46;
+            const rayLen = Math.hypot(w, h);
+            const rayCount = 16;
+            ctx.save();
+            ctx.translate(sunX, sunY);
+            ctx.rotate(cloudT * 0.0015);
+            ctx.fillStyle = "rgba(255, 240, 190, 0.07)";
+            for (let i = 0; i < rayCount; i += 1) {
+                const a = (i / rayCount) * Math.PI * 2;
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.arc(0, 0, rayLen, a, a + Math.PI / rayCount);
+                ctx.closePath();
+                ctx.fill();
+            }
+            ctx.restore();
+            const sun = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, Math.max(w, h) * 0.45);
+            sun.addColorStop(0, "rgba(255, 246, 205, 0.8)");
+            sun.addColorStop(0.35, "rgba(255, 205, 90, 0.25)");
+            sun.addColorStop(1, "rgba(255, 205, 90, 0)");
+            ctx.fillStyle = sun;
+            ctx.fillRect(0, 0, w, h);
+            skyStars.forEach((s) => {
+                const a = 0.25 + 0.75 * (0.5 + 0.5 * Math.sin(cloudT * 0.05 + s.p));
+                const r = s.r * unit * 1.6;
+                const sx = s.x * w;
+                const sy = s.y * h;
+                ctx.fillStyle = `rgba(255, 255, 255, ${a.toFixed(3)})`;
+                ctx.beginPath();
+                ctx.moveTo(sx, sy - r * 2);
+                ctx.lineTo(sx + r * 0.4, sy - r * 0.4);
+                ctx.lineTo(sx + r * 2, sy);
+                ctx.lineTo(sx + r * 0.4, sy + r * 0.4);
+                ctx.lineTo(sx, sy + r * 2);
+                ctx.lineTo(sx - r * 0.4, sy + r * 0.4);
+                ctx.lineTo(sx - r * 2, sy);
+                ctx.lineTo(sx - r * 0.4, sy - r * 0.4);
+                ctx.closePath();
+                ctx.fill();
+            });
+            const cx = cloudT * 0.012;
+            const pad = 90 * unit;
+            drawPuff(((w * 0.15 + cx * 3) % (w + pad * 2)) - pad, h * 0.12, 1.1 * unit);
+            drawPuff(((w * 0.55 + cx * 2.2) % (w + pad * 2)) - pad, h * 0.08, 0.95 * unit);
+            drawPuff(((w * 0.82 + cx * 2.8) % (w + pad * 2)) - pad, h * 0.2, 0.85 * unit);
+            drawLayer("#3a7fa6", "#1b4f6e", h * 0.4, (lw, lh) => {
+                ctx.moveTo(0, lh * 0.52);
+                ctx.lineTo(lw * 0.22, lh * 0.42);
+                ctx.lineTo(lw * 0.38, lh * 0.48);
+                ctx.lineTo(lw * 0.55, lh * 0.4);
+                ctx.lineTo(lw * 0.72, lh * 0.46);
+                ctx.lineTo(lw, lh * 0.44);
+                ctx.lineTo(lw, lh * 0.58);
+                ctx.lineTo(0, lh * 0.62);
+            });
+            drawLayer("#2f9a5e", "#0f4a30", h * 0.48, (lw, lh) => {
+                ctx.moveTo(0, lh * 0.58);
+                ctx.lineTo(lw * 0.18, lh * 0.5);
+                ctx.lineTo(lw * 0.35, lh * 0.56);
+                ctx.lineTo(lw * 0.5, lh * 0.48);
+                ctx.lineTo(lw * 0.68, lh * 0.54);
+                ctx.lineTo(lw, lh * 0.5);
+                ctx.lineTo(lw, lh * 0.72);
+                ctx.lineTo(0, lh * 0.78);
+            });
+            drawLayer("#1f7a45", "#0a2e1c", h * 0.6, (lw, lh) => {
+                ctx.moveTo(0, lh);
+                ctx.lineTo(0, lh * 0.68);
+                ctx.quadraticCurveTo(lw * 0.15, lh * 0.62, lw * 0.3, lh * 0.7);
+                ctx.quadraticCurveTo(lw * 0.45, lh * 0.58, lw * 0.6, lh * 0.66);
+                ctx.quadraticCurveTo(lw * 0.78, lh * 0.6, lw, lh * 0.65);
+                ctx.lineTo(lw, lh);
+            });
+            groundCoins.forEach((c) => {
+                const gx = c.x * w;
+                const gy = c.y * h;
+                const r = 7 * c.r * unit;
+                const shine = 0.5 + 0.5 * Math.sin(cloudT * 0.06 + c.p);
+                ctx.fillStyle = "#c47f00";
+                ctx.beginPath();
+                ctx.ellipse(gx, gy + r * 0.18, r, r * 0.55, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = "#ffd84a";
+                ctx.beginPath();
+                ctx.ellipse(gx, gy, r, r * 0.55, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = `rgba(255, 255, 240, ${(0.3 + shine * 0.6).toFixed(3)})`;
+                ctx.beginPath();
+                ctx.ellipse(gx - r * 0.3, gy - r * 0.15, r * 0.35, r * 0.15, 0, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        };
+        const resizeCanvas = () => {
+            const dpr = Math.min(window.devicePixelRatio || 1, 2);
+            viewW = Math.max(1, root.clientWidth);
+            viewH = Math.max(1, root.clientHeight);
+            canvas.width = Math.max(1, Math.floor(viewW * dpr));
+            canvas.height = Math.max(1, Math.floor(viewH * dpr));
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        };
+        const loop = () => {
+            cloudT += 1;
+            drawScene();
+            rafId = requestAnimationFrame(loop);
+        };
+        const startLoop = () => {
+            if (!rafId) rafId = requestAnimationFrame(loop);
+        };
+        resizeListener = () => {
+            requestAnimationFrame(() => {
+                resizeCanvas();
+                drawScene();
+            });
+        };
+        resizeCanvas();
+        startLoop();
+        window.addEventListener("resize", resizeListener);
+        stopCanvasLoop = () => {
+            if (rafId) {
+                cancelAnimationFrame(rafId);
+                rafId = null;
+            }
+        };
+    }
+    const removeRoot = () => {
+        if (resizeListener) {
+            window.removeEventListener("resize", resizeListener);
+            resizeListener = null;
+        }
+        stopCanvasLoop();
+        if (gameTimerId) {
+            clearInterval(gameTimerId);
+            gameTimerId = null;
+        }
+        clearTimeout(comboTimerId);
+        if (audioCtx && audioCtx.close) {
+            audioCtx.close().catch(() => null);
+            audioCtx = null;
+        }
+        styleEl.remove();
+        root.remove();
+    };
+    const onRootCloseAnimEnd = (e) => {
+        if (e.target !== root || root.dataset.state !== "closing") return;
+        root.removeEventListener("animationend", onRootCloseAnimEnd);
+        removeRoot();
+    };
+    closeBtn.addEventListener("click", () => {
+        if (root.dataset.state === "closing") return;
+        if (gameTimerId) {
+            clearInterval(gameTimerId);
+            gameTimerId = null;
+        }
+        root.dataset.state = "closing";
+        root.addEventListener("animationend", onRootCloseAnimEnd);
+    });
+    const goToScreen = (name) => {
+        root.dataset.screen = name;
+    };
+    const clearConfetti = () => {
+        confettiRoot.replaceChildren();
+    };
+    const spawnConfetti = () => {
+        clearConfetti();
+        const colors = ["#FFB800", "#FF8C00", "#FF6B35", "#8B1A1A", "#FFFFFF", "#FFD700"];
+        for (let i = 0; i < CONFIG.confettiCount; i += 1) {
+            const piece = document.createElement("div");
+            piece.className = "vls-confetti";
+            const leftPct = Math.random() * 100;
+            const dur = 2.5 + Math.random() * 2.2;
+            const delay = Math.random() * 0.8;
+            piece.style.left = `${leftPct}%`;
+            piece.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+            piece.style.animationDuration = `${dur}s`;
+            piece.style.animationDelay = `${delay}s`;
+            confettiRoot.appendChild(piece);
+            piece.addEventListener(
+                "animationend",
+                () => {
+                    piece.remove();
+                },
+                { once: true }
+            );
+        }
+    };
+    const restartAnim = (el, key, value) => {
+        el.removeAttribute(`data-${key}`);
+        void el.offsetWidth;
+        el.setAttribute(`data-${key}`, value);
+    };
+    const resetCombo = () => {
+        clearTimeout(comboTimerId);
+        comboTimerId = null;
+        combo = 0;
+        if (comboEl.dataset.visible === "true") comboEl.dataset.visible = "false";
+        gameStage.dataset.hot = "false";
+    };
+    const showResult = () => {
+        if (gameTimerId) {
+            clearInterval(gameTimerId);
+            gameTimerId = null;
+        }
+        resetCombo();
+        const won = tapCount >= CONFIG.winThreshold;
+        resultScreen.dataset.result = won ? "win" : "lose";
+        copyBtn.textContent = "KOPYALA";
+        copyBtn.removeAttribute("data-copied");
+        if (won) {
+            resultTitle.textContent = "Tebrikler! 🎉";
+            resultSub.textContent = `${tapCount} dokunuşla hazineyi ele geçirdin! En iyi kombon: x${bestCombo}. İndirim kodun hazır:`;
+            spawnConfetti();
+            SOUNDS.win();
+        } else {
+            resultTitle.textContent = "Neredeyse!";
+            resultSub.textContent = `${tapCount}/${CONFIG.winThreshold} dokunuş yaptın. Biraz daha hızlı dokun, hazine seni bekliyor!`;
+            clearConfetti();
+            SOUNDS.lose();
+        }
+        resultScreen.dataset.state = "";
+        goToScreen("result");
+    };
+    const startGame = () => {
+        tapCount = 0;
+        bestCombo = 0;
+        lastTapAt = 0;
+        timeLeft = CONFIG.gameDuration;
+        resetCombo();
+        comboEl.removeAttribute("data-visible");
+        goalBanner.removeAttribute("data-show");
+        hudTapsBlock.dataset.done = "false";
+        hudTime.dataset.low = "false";
+        fxLayer.replaceChildren();
+        hudTaps.textContent = "0";
+        hudTime.textContent = String(timeLeft);
+        gameChest.removeAttribute("data-tapped");
+        if (gameTimerId) {
+            clearInterval(gameTimerId);
+            gameTimerId = null;
+        }
+        timerEl.dataset.low = "false";
+        timerFill.style.animationDuration = `${CONFIG.gameDuration}s`;
+        restartAnim(timerEl, "running", "true");
+        gameScreen.dataset.state = "";
+        goToScreen("game");
+        gameTimerId = window.setInterval(() => {
+            timeLeft -= 1;
+            hudTime.textContent = String(Math.max(0, timeLeft));
+            if (timeLeft > 0 && timeLeft <= CONFIG.lowTimeAt) {
+                timerEl.dataset.low = "true";
+                hudTime.dataset.low = "true";
+                SOUNDS.tick();
+            }
+            if (timeLeft <= 0) {
+                showResult();
+            }
+        }, 1000);
+    };
+    startBtn.addEventListener(
+        "click",
+        () => {
+            try {
+                const _vlc = "<%VLSendClickFunc%>";
+                if (_vlc.indexOf("<%") === -1) {
+                    new Function(_vlc)();
+                }
+            } catch (err) {}
+            startBtn.disabled = true;
+            SOUNDS.start();
+            introScreen.dataset.state = "closing";
+            const onIntroOut = (e) => {
+                if (e.target !== introScreen) return;
+                introScreen.removeEventListener("animationend", onIntroOut);
+                introScreen.dataset.state = "";
+                startGame();
+            };
+            introScreen.addEventListener("animationend", onIntroOut);
+        },
+        { once: true }
+    );
+    const chestPopEnd = (e) => {
+        if (e.target !== gameChest) return;
+        gameChest.removeAttribute("data-tapped");
+        gameChest.removeEventListener("animationend", chestPopEnd);
+    };
+    const triggerChestPop = () => {
+        gameChest.removeEventListener("animationend", chestPopEnd);
+        gameChest.removeAttribute("data-tapped");
+        void gameChest.offsetWidth;
+        gameChest.setAttribute("data-tapped", "true");
+        gameChest.addEventListener("animationend", chestPopEnd);
+    };
+    const spawnFx = (className, x, y, vars) => {
+        const el = document.createElement("div");
+        el.className = className;
+        el.style.left = `${x}px`;
+        el.style.top = `${y}px`;
+        Object.keys(vars).forEach((key) => {
+            el.style.setProperty(key, vars[key]);
+        });
+        fxLayer.appendChild(el);
+        el.addEventListener(
+            "animationend",
+            () => {
+                el.remove();
+            },
+            { once: true }
+        );
+        return el;
+    };
+    const addTapFx = (clientX, clientY) => {
+        const rect = root.getBoundingClientRect();
+        const x = clientX - rect.left;
+        const y = clientY - rect.top;
+        const hot = combo >= CONFIG.comboHotAt;
+        const scoreEl = spawnFx("vls-score-pop", x, y, {
+            "--vls-dx": `${((Math.random() - 0.5) * 2).toFixed(2)}em`,
+            "--vls-rot": `${((Math.random() - 0.5) * 24).toFixed(1)}deg`,
+        });
+        scoreEl.textContent = "+1";
+        if (hot) scoreEl.dataset.big = "true";
+        if (fxLayer.childElementCount > CONFIG.maxFxNodes) return;
+        spawnFx("vls-tap-ring", x, y, {});
+        const coinCount = CONFIG.coinParticleCount + (hot ? 2 : 0);
+        for (let i = 0; i < coinCount; i += 1) {
+            const angle = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI * 1.2;
+            const dist = 3 + Math.random() * 3;
+            spawnFx("vls-coin-burst", x, y, {
+                "--vls-dx": `${(Math.cos(angle) * dist).toFixed(2)}em`,
+                "--vls-dy": `${(Math.sin(angle) * dist).toFixed(2)}em`,
+            });
+        }
+        for (let i = 0; i < CONFIG.sparkCount; i += 1) {
+            const angle = Math.random() * Math.PI * 2;
+            const dist = 1.5 + Math.random() * 2;
+            spawnFx("vls-spark", x, y, {
+                "--vls-dx": `${(Math.cos(angle) * dist).toFixed(2)}em`,
+                "--vls-dy": `${(Math.sin(angle) * dist).toFixed(2)}em`,
+            });
+        }
+    };
+    const onShakeEnd = (e) => {
+        if (e.target !== gameInner) return;
+        gameInner.removeAttribute("data-shake");
+    };
+    gameInner.addEventListener("animationend", onShakeEnd);
+    const updateCombo = () => {
+        const now = performance.now();
+        combo = now - lastTapAt <= CONFIG.comboWindow ? combo + 1 : 1;
+        lastTapAt = now;
+        bestCombo = Math.max(bestCombo, combo);
+        clearTimeout(comboTimerId);
+        comboTimerId = setTimeout(resetCombo, CONFIG.comboWindow);
+        gameStage.dataset.hot = combo >= CONFIG.comboHotAt ? "true" : "false";
+        if (combo < CONFIG.comboShowAt) return;
+        comboEl.textContent = `x${combo} KOMBO`;
+        restartAnim(comboEl, "visible", "true");
+        if (combo % CONFIG.comboShakeEvery === 0) {
+            restartAnim(gameInner, "shake", "true");
+            SOUNDS.combo();
+        }
+    };
+    const onChestTap = (clientX, clientY) => {
+        if (root.dataset.screen !== "game") return;
+        if (timeLeft <= 0) return;
+        tapCount += 1;
+        hudTaps.textContent = String(tapCount);
+        updateCombo();
+        triggerChestPop();
+        addTapFx(clientX, clientY);
+        SOUNDS.tap(combo);
+        if (tapCount === CONFIG.winThreshold) {
+            hudTapsBlock.dataset.done = "true";
+            restartAnim(goalBanner, "show", "true");
+            SOUNDS.goal();
+        }
+    };
+    tapTarget.addEventListener("pointerdown", (ev) => {
+        if (ev.pointerType === "mouse" && ev.button !== 0) return;
+        ev.preventDefault();
+        onChestTap(ev.clientX, ev.clientY);
+    });
+    tapTarget.addEventListener("contextmenu", (ev) => {
+        ev.preventDefault();
+    });
+    tapTarget.addEventListener(
+        "keydown",
+        (ev) => {
+            if (ev.key === "Enter" || ev.key === " ") {
+                ev.preventDefault();
+                if (ev.repeat) return;
+                const r = tapTarget.getBoundingClientRect();
+                onChestTap(r.left + r.width / 2, r.top + r.height / 2);
+            }
+        },
+        false
+    );
+    const markCopied = () => {
+        copyBtn.textContent = "KOPYALANDI ✓";
+        restartAnim(copyBtn, "copied", "true");
+        SOUNDS.copy();
+    };
+    const copyFallback = () => {
+        const helper = document.createElement("textarea");
+        helper.className = "vls-copy-helper";
+        helper.value = CONFIG.couponCode;
+        helper.setAttribute("readonly", "");
+        root.appendChild(helper);
+        helper.select();
+        try {
+            document.execCommand("copy");
+        } catch (err) {}
+        helper.remove();
+        markCopied();
+    };
+    copyBtn.addEventListener("click", () => {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(CONFIG.couponCode).then(markCopied, copyFallback);
+        } else {
+            copyFallback();
+        }
+    });
+    retryBtn.addEventListener("click", () => {
+        if (retryBtn.disabled) return;
+        retryBtn.disabled = true;
+        resultScreen.dataset.state = "closing";
+        const onResultOut = (e) => {
+            if (e.target !== resultScreen) return;
+            resultScreen.removeEventListener("animationend", onResultOut);
+            resultScreen.dataset.state = "";
+            retryBtn.disabled = false;
+            startGame();
+        };
+        resultScreen.addEventListener("animationend", onResultOut);
+    });
+    try {
+        const _vli = "<%VLSendImpressionFunc%>";
+        if (_vli.indexOf("<%") === -1) {
+            new Function(_vli)();
+        }
+    } catch (err) {}
+}
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", vlsTapGameInit, { once: true });
+} else {
+    vlsTapGameInit();
+}

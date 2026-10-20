@@ -1,0 +1,2042 @@
+function Reco() {
+    let vlRecoSettled = false;
+    const vlRecoDone = (data) => {
+        if (vlRecoSettled) {
+            return;
+        }
+        vlRecoSettled = true;
+        window.clearTimeout(vlRecoTimer);
+        initWidget(data);
+    };
+    const vlRecoTimer = window.setTimeout(() => vlRecoDone(null), 5000);
+    try {
+        const vl = new Visilabs();
+        vl.AddParameter("json", true);
+        vl.Suggest(41, null, null, vlRecoDone);
+    } catch {
+        vlRecoDone(null);
+    }
+}
+
+let vlRecoRetries = 0;
+
+function runRecoWhenReady() {
+    if (document.querySelector("#vl-price-guess-widget")) {
+        return;
+    }
+    if (typeof Visilabs === "undefined") {
+        if (vlRecoRetries < 15) {
+            vlRecoRetries += 1;
+            window.setTimeout(runRecoWhenReady, 200);
+        } else {
+            initWidget(null);
+        }
+        return;
+    }
+    Reco();
+}
+
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", runRecoWhenReady, { once: true });
+} else {
+    runRecoWhenReady();
+}
+
+function vlSvgUri(bgFrom, bgTo, defs, body) {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240"><defs><radialGradient id="bg" cx="50%" cy="38%" r="75%"><stop offset="0" stop-color="${bgFrom}"/><stop offset="1" stop-color="${bgTo}"/></radialGradient><radialGradient id="sh"><stop offset="0" stop-color="#000" stop-opacity=".3"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient>${defs}</defs><rect width="240" height="240" fill="url(#bg)"/><circle cx="196" cy="44" r="26" fill="#fff" opacity=".35"/><circle cx="36" cy="70" r="12" fill="#fff" opacity=".3"/><ellipse cx="120" cy="204" rx="80" ry="12" fill="url(#sh)"/>${body}</svg>`;
+    return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+}
+
+function vlPlaceholderImg() {
+    return vlSvgUri(
+        "#f1f5f5",
+        "#d5e1e1",
+        `<linearGradient id="a" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5c8a8a"/><stop offset="1" stop-color="#375a5a"/></linearGradient>`,
+        `<rect x="62" y="96" width="116" height="98" rx="10" fill="url(#a)"/><rect x="54" y="78" width="132" height="30" rx="8" fill="#6f9c9c"/><rect x="112" y="78" width="16" height="116" fill="#ffd43b"/><path d="M120 78 C100 46 74 60 94 78 Z M120 78 C140 46 166 60 146 78 Z" fill="#ffd43b"/><text x="120" y="170" text-anchor="middle" font-family="Arial" font-size="40" font-weight="700" fill="#fff">?</text>`
+    );
+}
+
+function vlFallbackProducts() {
+    return [
+        {
+            code: "vl-fb-1",
+            title: "Kablosuz Bluetooth Kulaklık",
+            dprice: "1899.90",
+            img: vlSvgUri(
+                "#fff5f5",
+                "#ffc9c9",
+                `<linearGradient id="a" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4a4f5c"/><stop offset="1" stop-color="#16181d"/></linearGradient><linearGradient id="b" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff6b6b"/><stop offset="1" stop-color="#c92a2a"/></linearGradient>`,
+                `<path d="M58 136 C58 58 182 58 182 136" fill="none" stroke="url(#a)" stroke-width="16" stroke-linecap="round"/><path d="M72 108 C82 74 158 74 168 108" fill="none" stroke="#fff" stroke-opacity=".25" stroke-width="4" stroke-linecap="round"/><rect x="38" y="120" width="42" height="74" rx="19" fill="url(#a)"/><rect x="70" y="128" width="18" height="58" rx="9" fill="url(#b)"/><rect x="46" y="130" width="8" height="40" rx="4" fill="#fff" fill-opacity=".2"/><rect x="160" y="120" width="42" height="74" rx="19" fill="url(#a)"/><rect x="152" y="128" width="18" height="58" rx="9" fill="url(#b)"/><rect x="186" y="130" width="8" height="40" rx="4" fill="#fff" fill-opacity=".2"/><circle cx="59" cy="182" r="3" fill="#51cf66"/>`
+            ),
+        },
+        {
+            code: "vl-fb-2",
+            title: "Seramik Kupa Seti (2'li)",
+            dprice: "349.90",
+            img: vlSvgUri(
+                "#e7f5ff",
+                "#a5d8ff",
+                `<linearGradient id="a" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#dfe6ee"/><stop offset=".4" stop-color="#ffffff"/><stop offset="1" stop-color="#c9d3de"/></linearGradient><linearGradient id="b" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#1c7ed6"/><stop offset="1" stop-color="#4dabf7"/></linearGradient><linearGradient id="c" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#e03131"/><stop offset="1" stop-color="#ff8787"/></linearGradient>`,
+                `<path d="M40 120 h-8 a18 18 0 0 0 0 36 h8" fill="none" stroke="#cfd8e2" stroke-width="10"/><rect x="40" y="98" width="72" height="96" rx="12" fill="url(#a)" stroke="#b9c4d0" stroke-width="2"/><rect x="40" y="134" width="72" height="16" fill="url(#b)"/><ellipse cx="76" cy="100" rx="36" ry="7" fill="#7a4a2a"/><path d="M66 86 C60 74 74 70 68 58 M84 86 C78 74 92 70 86 58" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" opacity=".8"/><path d="M196 128 h8 a16 16 0 0 1 0 32 h-8" fill="none" stroke="#cfd8e2" stroke-width="9"/><rect x="130" y="116" width="66" height="78" rx="11" fill="url(#a)" stroke="#b9c4d0" stroke-width="2"/><rect x="130" y="146" width="66" height="13" fill="url(#c)"/><ellipse cx="163" cy="118" rx="33" ry="6" fill="#8d5a3a"/>`
+            ),
+        },
+        {
+            code: "vl-fb-3",
+            title: "Hafif Koşu Ayakkabısı",
+            dprice: "2499.00",
+            img: vlSvgUri(
+                "#fff4e6",
+                "#ffd8a8",
+                `<linearGradient id="a" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#e3e7eb"/></linearGradient><linearGradient id="b" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#e8590c"/><stop offset="1" stop-color="#ffa94d"/></linearGradient><linearGradient id="c" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#495057"/><stop offset="1" stop-color="#212529"/></linearGradient>`,
+                `<path d="M28 170 Q28 190 50 190 L196 190 Q216 188 214 170 L212 164 L30 164 Z" fill="url(#c)"/><path d="M30 156 L212 156 L212 168 L30 168 Z" fill="#f8f9fa"/><path d="M34 160 C32 130 46 116 70 110 L108 94 C118 90 126 94 130 102 L142 122 C162 130 192 134 206 148 C214 154 214 160 212 160 Z" fill="url(#a)" stroke="#ced4da" stroke-width="2"/><path d="M66 148 C108 142 150 128 190 140 C152 136 112 152 72 158 Z" fill="url(#b)"/><path d="M36 128 C34 118 42 112 52 114 L56 152 L36 154 Z" fill="url(#b)"/><path d="M98 108 l16 10 M108 101 l15 10 M118 96 l13 10" stroke="#495057" stroke-width="3.5" stroke-linecap="round"/><path d="M150 132 C170 136 188 140 200 148" fill="none" stroke="#fff" stroke-width="3" opacity=".7"/>`
+            ),
+        },
+        {
+            code: "vl-fb-4",
+            title: "Paslanmaz Çelik Termos 750 ml",
+            dprice: "649.90",
+            img: vlSvgUri(
+                "#e6fcf5",
+                "#96f2d7",
+                `<linearGradient id="a" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#868e96"/><stop offset=".3" stop-color="#f8f9fa"/><stop offset=".55" stop-color="#ced4da"/><stop offset="1" stop-color="#6c757d"/></linearGradient><linearGradient id="b" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#087f5b"/><stop offset=".4" stop-color="#20c997"/><stop offset="1" stop-color="#0ca678"/></linearGradient>`,
+                `<rect x="88" y="72" width="64" height="124" rx="18" fill="url(#a)"/><rect x="92" y="36" width="56" height="40" rx="10" fill="url(#b)"/><path d="M100 46 V68 M110 46 V68 M120 46 V68 M130 46 V68 M140 46 V68" stroke="#000" stroke-opacity=".12" stroke-width="2"/><rect x="96" y="74" width="48" height="6" fill="#343a40" opacity=".35"/><rect x="88" y="150" width="64" height="12" fill="url(#b)"/><rect x="100" y="86" width="7" height="96" rx="3.5" fill="#fff" opacity=".7"/>`
+            ),
+        },
+        {
+            code: "vl-fb-5",
+            title: "Vanilya Kokulu Mum",
+            dprice: "289.90",
+            img: vlSvgUri(
+                "#f3f0ff",
+                "#d0bfff",
+                `<linearGradient id="a" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff4e6"/><stop offset="1" stop-color="#ffd8a8"/></linearGradient><radialGradient id="f" cx="50%" cy="70%" r="60%"><stop offset="0" stop-color="#fff9db"/><stop offset=".5" stop-color="#ffd43b"/><stop offset="1" stop-color="#ff922b"/></radialGradient>`,
+                `<circle cx="120" cy="88" r="40" fill="#ffd43b" opacity=".2"/><rect x="68" y="100" width="104" height="94" rx="14" fill="#ffffff" fill-opacity=".5" stroke="#c5b8f0" stroke-width="2"/><rect x="73" y="116" width="94" height="74" rx="10" fill="url(#a)"/><rect x="88" y="138" width="64" height="32" rx="5" fill="#7048e8"/><rect x="98" y="148" width="44" height="4" rx="2" fill="#fff" opacity=".85"/><rect x="104" y="157" width="32" height="3" rx="1.5" fill="#fff" opacity=".6"/><rect x="118" y="98" width="4" height="20" rx="2" fill="#343a40"/><path d="M120 58 C136 80 134 100 120 104 C106 100 104 80 120 58 Z" fill="url(#f)"/><rect x="78" y="108" width="6" height="76" rx="3" fill="#fff" opacity=".55"/>`
+            ),
+        },
+        {
+            code: "vl-fb-6",
+            title: "Su Geçirmez Sırt Çantası",
+            dprice: "1349.90",
+            img: vlSvgUri(
+                "#edf2ff",
+                "#bac8ff",
+                `<linearGradient id="a" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5c7cfa"/><stop offset="1" stop-color="#364fc7"/></linearGradient><linearGradient id="b" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#91a7ff"/><stop offset="1" stop-color="#4c6ef5"/></linearGradient>`,
+                `<path d="M100 68 C100 44 140 44 140 68" fill="none" stroke="#2b3a8f" stroke-width="9" stroke-linecap="round"/><rect x="62" y="62" width="116" height="134" rx="36" fill="url(#a)"/><path d="M78 96 C100 82 140 82 162 96" fill="none" stroke="#dbe4ff" stroke-width="3" stroke-dasharray="5 4"/><rect x="80" y="126" width="80" height="58" rx="16" fill="url(#b)"/><path d="M88 140 H152" stroke="#dbe4ff" stroke-width="3" stroke-linecap="round"/><rect x="142" y="137" width="7" height="16" rx="3" fill="#ffd43b"/><rect x="72" y="78" width="8" height="70" rx="4" fill="#fff" opacity=".2"/>`
+            ),
+        },
+        {
+            code: "vl-fb-7",
+            title: "LED Masa Lambası",
+            dprice: "1149.00",
+            img: vlSvgUri(
+                "#fff9db",
+                "#ffec99",
+                `<linearGradient id="a" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffe066"/><stop offset="1" stop-color="#f08c00"/></linearGradient><linearGradient id="b" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#495057"/><stop offset="1" stop-color="#212529"/></linearGradient>`,
+                `<path d="M150 118 L120 144 L172 204 L224 168 Z" fill="#fff3bf" opacity=".7"/><ellipse cx="88" cy="192" rx="44" ry="10" fill="url(#b)"/><path d="M88 188 L112 124 L82 80" fill="none" stroke="url(#b)" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/><circle cx="112" cy="124" r="8" fill="#868e96"/><path d="M70 66 L102 54 L166 112 L122 140 Z" fill="url(#a)"/><path d="M78 66 L100 58 L124 80" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" opacity=".5"/><circle cx="144" cy="126" r="11" fill="#fffbe6"/>`
+            ),
+        },
+        {
+            code: "vl-fb-8",
+            title: "Akıllı Spor Saati",
+            dprice: "3999.00",
+            img: vlSvgUri(
+                "#fff0f6",
+                "#fcc2d7",
+                `<linearGradient id="a" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#495057"/><stop offset="1" stop-color="#121416"/></linearGradient><linearGradient id="b" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#c2255c"/><stop offset=".5" stop-color="#f06595"/><stop offset="1" stop-color="#c2255c"/></linearGradient><linearGradient id="s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1c7ed6"/><stop offset="1" stop-color="#0b2e4f"/></linearGradient>`,
+                `<rect x="96" y="28" width="48" height="72" rx="12" fill="url(#b)"/><rect x="96" y="140" width="48" height="66" rx="12" fill="url(#b)"/><circle cx="120" cy="168" r="3" fill="#a61e4d"/><circle cx="120" cy="182" r="3" fill="#a61e4d"/><rect x="76" y="72" width="88" height="96" rx="24" fill="url(#a)"/><rect x="85" y="81" width="70" height="78" rx="17" fill="url(#s)"/><text x="120" y="122" text-anchor="middle" font-family="Arial" font-size="22" font-weight="700" fill="#fff">10:09</text><rect x="100" y="132" width="40" height="5" rx="2.5" fill="#51cf66"/><rect x="100" y="141" width="26" height="4" rx="2" fill="#ffd43b"/><rect x="162" y="106" width="8" height="20" rx="3" fill="#868e96"/><path d="M90 92 Q98 84 116 84" stroke="#fff" stroke-opacity=".35" stroke-width="3" fill="none"/>`
+            ),
+        },
+    ];
+}
+
+function initWidget(products) {
+    if (document.querySelector("#vl-price-guess-widget")) {
+        return;
+    }
+
+    const CONFIG = {
+        rounds: 5,
+        minProducts: 3,
+        attempts: 3,
+        maxPoints: 100,
+        bullseyeRatio: 0.05,
+        bullseyePenalty: 12,
+        missPoints: 70,
+        zeroPointRatio: 0.5,
+        rewardRatio: 0.3,
+        discountCode: "VLFIYAT10",
+        discountLabel: "%10 indirim",
+        ctaUrl: "/",
+        heatLevels: [
+            { max: 0.05, label: "Tam isabet!" },
+            { max: 0.12, label: "Çok sıcak!" },
+            { max: 0.25, label: "Sıcak" },
+            { max: 0.45, label: "Ilık" },
+            { max: 0.7, label: "Soğuk" },
+            { max: Infinity, label: "Buz gibi!" },
+        ],
+        confettiColors: ["#375a5a", "#d32929", "#ffd43b", "#51cf66", "#4dabf7", "#f783ac"],
+    };
+
+    const SOUNDS = {
+        tick: [[1400, 0, 0.025, "square", 0.025]],
+        submit: [[520, 0, 0.08, "triangle", 0.14]],
+        higher: [[440, 0, 0.12, "triangle", 0.15], [660, 0.1, 0.16, "triangle", 0.15]],
+        lower: [[660, 0, 0.12, "triangle", 0.15], [440, 0.1, 0.16, "triangle", 0.15]],
+        far: [[200, 0, 0.28, "sawtooth", 0.07, 110]],
+        error: [[220, 0, 0.15, "square", 0.06]],
+        bullseye: [[523, 0, 0.12, "triangle", 0.16], [659, 0.09, 0.12, "triangle", 0.16], [784, 0.18, 0.12, "triangle", 0.16], [1047, 0.27, 0.32, "triangle", 0.18]],
+        reveal: [[392, 0, 0.12, "sine", 0.15], [523, 0.1, 0.24, "sine", 0.15]],
+        win: [[523, 0, 0.14, "triangle", 0.16], [659, 0.12, 0.14, "triangle", 0.16], [784, 0.24, 0.14, "triangle", 0.16], [1047, 0.36, 0.2, "triangle", 0.17], [784, 0.52, 0.12, "triangle", 0.14], [1047, 0.62, 0.45, "triangle", 0.18]],
+        lose: [[392, 0, 0.2, "triangle", 0.13], [330, 0.18, 0.2, "triangle", 0.13], [262, 0.36, 0.45, "triangle", 0.13]],
+        copy: [[880, 0, 0.06, "sine", 0.12], [1320, 0.06, 0.1, "sine", 0.12]],
+    };
+
+    const vlValidProducts = (Array.isArray(products) ? products : []).filter((p) => p && typeof p.title === "string" && p.title.trim() !== "" && parseFloat(p.dprice) > 0);
+    const vlSource = vlValidProducts.length >= CONFIG.minProducts ? vlValidProducts : vlFallbackProducts();
+    const roundCount = Math.min(CONFIG.rounds, vlSource.length);
+    const maxTotal = roundCount * CONFIG.maxPoints;
+    const rewardScore = Math.ceil(maxTotal * CONFIG.rewardRatio);
+    const vlPlaceholder = vlPlaceholderImg();
+
+    const vlStyle = document.createElement("style");
+    vlStyle.id = "vl-price-guess-style";
+    vlStyle.textContent = `
+@keyframes vl-overlay-in {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+@keyframes vl-overlay-out {
+    from {
+        opacity: 1;
+    }
+    to {
+        opacity: 0;
+    }
+}
+@keyframes vl-pop-in {
+    from {
+        opacity: 0;
+        transform: translateY(1.5em) scale(0.92);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+@keyframes vl-pop-out {
+    from {
+        opacity: 1;
+        transform: scale(1);
+    }
+    to {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+}
+@keyframes vl-fade-in {
+    from {
+        opacity: 0;
+        transform: translateY(0.5em);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+@keyframes vl-card-in-a {
+    from {
+        opacity: 0;
+        transform: translateX(-1.5em) rotate(-2deg);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0) rotate(0);
+    }
+}
+@keyframes vl-card-in-b {
+    from {
+        opacity: 0;
+        transform: translateX(-1.5em) rotate(-2deg);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0) rotate(0);
+    }
+}
+@keyframes vl-shake {
+    0%, 100% {
+        transform: translateX(0);
+    }
+    20% {
+        transform: translateX(-0.5em) rotate(-1.5deg);
+    }
+    40% {
+        transform: translateX(0.45em) rotate(1.5deg);
+    }
+    60% {
+        transform: translateX(-0.3em);
+    }
+    80% {
+        transform: translateX(0.2em);
+    }
+}
+@keyframes vl-tag-reveal {
+    0% {
+        transform: rotateX(90deg) scale(0.8);
+        opacity: 0.3;
+    }
+    60% {
+        transform: rotateX(-12deg) scale(1.08);
+        opacity: 1;
+    }
+    100% {
+        transform: rotateX(0) scale(1);
+        opacity: 1;
+    }
+}
+@keyframes vl-fb-in {
+    0% {
+        opacity: 0;
+        transform: scale(0.6);
+    }
+    60% {
+        opacity: 1;
+        transform: scale(1.1);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+@keyframes vl-bob-up {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-0.25em);
+    }
+}
+@keyframes vl-bob-down {
+    0%, 100% {
+        transform: rotate(180deg) translateY(0);
+    }
+    50% {
+        transform: rotate(180deg) translateY(-0.25em);
+    }
+}
+@keyframes vl-score-float {
+    0% {
+        opacity: 0;
+        transform: translate(-50%, 0) scale(0.6);
+    }
+    20% {
+        opacity: 1;
+        transform: translate(-50%, -0.8em) scale(1.15);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(-50%, -3.5em) scale(1);
+    }
+}
+@keyframes vl-bump {
+    0% {
+        transform: scale(1);
+    }
+    40% {
+        transform: scale(1.45);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+@keyframes vl-confetti {
+    0% {
+        opacity: 1;
+        transform: translate(-50%, -50%) rotate(0) scale(1);
+    }
+    55% {
+        opacity: 1;
+        transform: translate(calc(-50% + var(--vl-x)), calc(-50% + var(--vl-y))) rotate(var(--vl-r)) scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(calc(-50% + var(--vl-x) * 1.2), calc(-50% + var(--vl-y) + 6em)) rotate(calc(var(--vl-r) * 2)) scale(0.6);
+    }
+}
+@keyframes vl-star-in {
+    0% {
+        opacity: 0;
+        transform: scale(0.2) rotate(-60deg);
+    }
+    70% {
+        opacity: 1;
+        transform: scale(1.25) rotate(10deg);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1) rotate(0);
+    }
+}
+@keyframes vl-pulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+}
+@keyframes vl-float {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-0.4em);
+    }
+}
+@keyframes vl-code-in {
+    0% {
+        opacity: 0;
+        transform: scale(0.85);
+    }
+    70% {
+        opacity: 1;
+        transform: scale(1.04);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+.vl-popup-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(17, 28, 28, 0.62);
+    -webkit-backdrop-filter: blur(3px);
+    backdrop-filter: blur(3px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2147483000;
+    padding: max(0.5em, env(safe-area-inset-top, 0px)) max(0.5em, env(safe-area-inset-right, 0px)) max(0.5em, env(safe-area-inset-bottom, 0px)) max(0.5em, env(safe-area-inset-left, 0px));
+    box-sizing: border-box;
+}
+.vl-popup-overlay[data-state="open"] {
+    animation: vl-overlay-in 0.3s ease forwards;
+}
+.vl-popup-overlay[data-state="closing"] {
+    animation: vl-overlay-out 0.3s ease forwards;
+}
+.vl-popup-overlay *,
+.vl-popup-overlay *::before,
+.vl-popup-overlay *::after {
+    box-sizing: border-box;
+}
+.vl-popup-content {
+    --vl-primary: #375a5a;
+    --vl-primary-dark: #284242;
+    --vl-accent: #d32929;
+    --vl-text: #2c3838;
+    --vl-muted: #6b7c7c;
+    --vl-soft: #eef4f4;
+    background: linear-gradient(180deg, #ffffff 0%, #f4f8f8 100%);
+    position: relative;
+    width: min(94vw, 27em);
+    max-height: calc(100vh - 1em);
+    max-height: calc(100dvh - 1em);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    border-radius: 1.1em;
+    margin: 0 auto;
+    font-size: clamp(14px, 3.6vw, 16px);
+    font-family: "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
+    color: var(--vl-text);
+    box-shadow: 0 1.5em 4em rgba(0, 0, 0, 0.35);
+    animation: vl-pop-in 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.2) forwards;
+}
+.vl-popup-overlay[data-state="closing"] .vl-popup-content {
+    animation: vl-pop-out 0.25s ease forwards;
+}
+.vl-close-button,
+.vl-sound-button {
+    position: absolute;
+    top: 0.6em;
+    cursor: pointer;
+    width: 2.3em;
+    height: 2.3em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    color: var(--vl-text);
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid #dde6e6;
+    box-shadow: 0 0.15em 0.5em rgba(0, 0, 0, 0.08);
+    z-index: 10;
+    padding: 0;
+    transition: transform 0.15s ease;
+}
+.vl-close-button {
+    right: 0.6em;
+}
+.vl-sound-button {
+    left: 0.6em;
+}
+.vl-close-button:active,
+.vl-sound-button:active {
+    transform: scale(0.9);
+}
+.vl-close-button svg,
+.vl-sound-button svg {
+    width: 1.1em;
+    height: 1.1em;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2.4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+.vl-sound-button .vl-sound-off {
+    display: none;
+}
+.vl-popup-overlay[data-vl-muted="true"] .vl-sound-button .vl-sound-on {
+    display: none;
+}
+.vl-popup-overlay[data-vl-muted="true"] .vl-sound-button .vl-sound-off {
+    display: block;
+}
+.vl-fx-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 20;
+}
+.vl-confetti {
+    position: absolute;
+    width: 0.55em;
+    height: 0.8em;
+    border-radius: 0.12em;
+    animation: vl-confetti 1.3s cubic-bezier(0.2, 0.7, 0.4, 1) forwards;
+}
+.vl-score-pop {
+    position: absolute;
+    font-size: 1.7em;
+    font-weight: 800;
+    color: #2b8a3e;
+    text-shadow: 0 0.08em 0 #ffffff, 0 0.15em 0.4em rgba(0, 0, 0, 0.2);
+    white-space: nowrap;
+    animation: vl-score-float 1.2s ease-out forwards;
+}
+#vl-price-guess-widget {
+    position: relative;
+    padding: 1em 1.05em 1.15em;
+    margin: 0;
+    font-size: 1em;
+    flex: 0 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+#vl-price-guess-widget .vl-header {
+    font-size: 1.45em;
+    text-align: center;
+    width: 100%;
+    margin: 0 0 0.3em;
+    padding: 0 1.6em;
+    color: var(--vl-primary-dark);
+    font-weight: 800;
+    line-height: 1.2;
+    flex-shrink: 0;
+}
+#vl-price-guess-widget .vl-step {
+    display: none;
+    animation: vl-fade-in 0.35s ease forwards;
+}
+#vl-price-guess-widget .vl-step[data-vl-state="active"] {
+    display: flex;
+    flex-direction: column;
+    flex: 0 1 auto;
+    min-height: 0;
+}
+#vl-price-guess-widget .vl-intro-hero {
+    width: 13em;
+    max-width: 80%;
+    margin: 0.4em auto 0.2em;
+    animation: vl-float 3s ease-in-out infinite;
+}
+#vl-price-guess-widget .vl-intro-hero svg {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+#vl-price-guess-widget .vl-intro-text {
+    color: var(--vl-muted);
+    font-size: 0.95em;
+    line-height: 1.45;
+    margin: 0 auto 0.7em;
+    text-align: center;
+    max-width: 24em;
+}
+#vl-price-guess-widget .vl-rules {
+    list-style: none;
+    margin: 0 0 0.6em;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.45em;
+}
+#vl-price-guess-widget .vl-rules li {
+    display: flex;
+    align-items: center;
+    gap: 0.7em;
+    background: #ffffff;
+    border: 1px solid #e1eaea;
+    border-radius: 0.75em;
+    padding: 0.55em 0.75em;
+    font-size: 0.9em;
+    line-height: 1.35;
+}
+#vl-price-guess-widget .vl-rule-icon {
+    flex: 0 0 2.2em;
+    height: 2.2em;
+    border-radius: 0.6em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--vl-soft);
+    color: var(--vl-primary);
+}
+#vl-price-guess-widget .vl-rule-icon svg {
+    width: 1.3em;
+    height: 1.3em;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2.2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+#vl-price-guess-widget .vl-btn-primary,
+#vl-price-guess-widget .vl-btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4em;
+    min-width: 10em;
+    margin: 0.65em auto 0;
+    padding: 0.8em 1.3em;
+    border-radius: 0.7em;
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 1em;
+    font-family: inherit;
+    text-decoration: none;
+    line-height: 1.2;
+    transition: transform 0.12s ease, box-shadow 0.12s ease, background-color 0.2s ease;
+    -webkit-tap-highlight-color: transparent;
+}
+#vl-price-guess-widget .vl-btn-primary {
+    background: linear-gradient(180deg, #4a7676 0%, var(--vl-primary) 55%, var(--vl-primary-dark) 100%);
+    color: #ffffff;
+    border: none;
+    box-shadow: 0 0.3em 0 #1d3232, 0 0.5em 1em rgba(40, 66, 66, 0.3);
+}
+#vl-price-guess-widget .vl-btn-primary:active {
+    transform: translateY(0.2em);
+    box-shadow: 0 0.1em 0 #1d3232, 0 0.25em 0.5em rgba(40, 66, 66, 0.3);
+}
+#vl-price-guess-widget .vl-btn-secondary {
+    background: #ffffff;
+    color: var(--vl-primary);
+    border: 2px solid var(--vl-primary);
+}
+#vl-price-guess-widget .vl-btn-secondary:active {
+    transform: translateY(0.1em);
+}
+#vl-price-guess-widget .vl-btn-primary.vl-start-btn {
+    min-width: 13em;
+    font-size: 1.1em;
+    animation: vl-pulse 1.6s ease-in-out infinite;
+}
+#vl-price-guess-widget .vl-hud {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6em;
+    margin: 0 2.4em 0.7em;
+    flex-shrink: 0;
+}
+#vl-price-guess-widget .vl-progress {
+    display: flex;
+    align-items: center;
+    gap: 0.45em;
+    font-size: 0.85em;
+    color: var(--vl-primary);
+    font-weight: 700;
+    white-space: nowrap;
+}
+#vl-price-guess-widget .vl-progress-dots {
+    display: flex;
+    gap: 0.25em;
+}
+#vl-price-guess-widget .vl-progress-dot {
+    width: 0.6em;
+    height: 0.6em;
+    border-radius: 50%;
+    background: #d5e1e1;
+}
+#vl-price-guess-widget .vl-progress-dot[data-vl-state="current"] {
+    background: var(--vl-primary);
+    transform: scale(1.3);
+}
+#vl-price-guess-widget .vl-progress-dot[data-vl-state="done"] {
+    background: #ffa94d;
+}
+#vl-price-guess-widget .vl-progress-dot[data-vl-state="hit"] {
+    background: #40c057;
+}
+#vl-price-guess-widget .vl-score-pill {
+    display: flex;
+    align-items: center;
+    gap: 0.35em;
+    padding: 0.3em 0.75em;
+    border-radius: 2em;
+    background: linear-gradient(180deg, #fff3bf, #ffe066);
+    color: #7c5a00;
+    font-size: 0.85em;
+    font-weight: 700;
+    box-shadow: inset 0 -0.15em 0 rgba(0, 0, 0, 0.08);
+    white-space: nowrap;
+}
+#vl-price-guess-widget .vl-score-value {
+    display: inline-block;
+    min-width: 1.5em;
+    text-align: center;
+    font-size: 1.15em;
+}
+#vl-price-guess-widget .vl-bump {
+    display: inline-block;
+    animation: vl-bump 0.45s ease;
+}
+#vl-price-guess-widget .vl-play-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8em;
+}
+#vl-price-guess-widget .vl-product-card {
+    position: relative;
+    background: #ffffff;
+    border: 1px solid #e1eaea;
+    border-radius: 1em;
+    padding: 0.6em;
+    box-shadow: 0 0.4em 1.2em rgba(40, 66, 66, 0.1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+#vl-price-guess-widget .vl-product-card[data-vl-anim="in-a"] {
+    animation: vl-card-in-a 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.15);
+}
+#vl-price-guess-widget .vl-product-card[data-vl-anim="in-b"] {
+    animation: vl-card-in-b 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.15);
+}
+#vl-price-guess-widget .vl-card-img-wrap {
+    position: relative;
+    width: 100%;
+    height: 10.5em;
+    border-radius: 0.75em;
+    overflow: hidden;
+    background: #f3f6f6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+#vl-price-guess-widget .vl-card-img-wrap::before {
+    content: "";
+    position: absolute;
+    top: -1em;
+    left: -1em;
+    right: -1em;
+    bottom: -1em;
+    background-image: var(--vl-img);
+    background-size: cover;
+    background-position: center;
+    filter: blur(1.2em) saturate(1.3);
+    opacity: 0.6;
+}
+#vl-price-guess-widget .vl-card-img-wrap[data-vl-shake="true"] {
+    animation: vl-shake 0.45s ease;
+}
+#vl-price-guess-widget .vl-card-img {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+    filter: drop-shadow(0 0.4em 0.6em rgba(0, 0, 0, 0.12));
+}
+#vl-price-guess-widget .vl-card-title {
+    font-size: 1em;
+    line-height: 1.3;
+    color: var(--vl-text);
+    text-align: center;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    margin: 0.55em 0 0.45em;
+    font-weight: 700;
+}
+#vl-price-guess-widget .vl-price-tag {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4em;
+    padding: 0.35em 0.9em 0.35em 1.4em;
+    border-radius: 0.3em 0.6em 0.6em 0.3em;
+    background: linear-gradient(180deg, #e9eeee, #d3dddd);
+    color: var(--vl-muted);
+    font-weight: 800;
+    font-size: 1.05em;
+    letter-spacing: 0.04em;
+    perspective: 20em;
+}
+#vl-price-guess-widget .vl-price-tag::before {
+    content: "";
+    position: absolute;
+    left: 0.5em;
+    top: 50%;
+    width: 0.45em;
+    height: 0.45em;
+    margin-top: -0.225em;
+    border-radius: 50%;
+    background: #ffffff;
+    box-shadow: inset 0 0.05em 0.1em rgba(0, 0, 0, 0.25);
+}
+#vl-price-guess-widget .vl-price-tag[data-vl-state="revealed"] {
+    background: linear-gradient(180deg, #ff6b6b, var(--vl-accent));
+    color: #ffffff;
+    letter-spacing: 0;
+    box-shadow: 0 0.3em 0.8em rgba(211, 41, 41, 0.35);
+    animation: vl-tag-reveal 0.6s ease;
+}
+#vl-price-guess-widget .vl-guess-panel {
+    display: flex;
+    flex-direction: column;
+    background: #ffffff;
+    border: 1px solid #e1eaea;
+    border-radius: 1em;
+    padding: 0.75em 0.85em 0.85em;
+    box-shadow: 0 0.4em 1.2em rgba(40, 66, 66, 0.08);
+}
+#vl-price-guess-widget .vl-panel-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.85em;
+    color: var(--vl-muted);
+    font-weight: 600;
+}
+#vl-price-guess-widget .vl-attempts {
+    display: flex;
+    align-items: center;
+    gap: 0.3em;
+}
+#vl-price-guess-widget .vl-attempt-dot {
+    width: 0.85em;
+    height: 0.85em;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #ff8787, var(--vl-accent));
+    box-shadow: 0 0.1em 0.2em rgba(211, 41, 41, 0.4);
+    transition: transform 0.25s ease, opacity 0.25s ease;
+}
+#vl-price-guess-widget .vl-attempt-dot[data-vl-used="true"] {
+    background: #dee5e5;
+    box-shadow: none;
+    transform: scale(0.75);
+}
+#vl-price-guess-widget .vl-guess-display {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 0.25em;
+    margin: 0.15em 0 0.1em;
+    color: var(--vl-primary-dark);
+}
+#vl-price-guess-widget .vl-guess-value {
+    font-size: 2.2em;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.1;
+}
+#vl-price-guess-widget .vl-guess-unit {
+    font-size: 1.1em;
+    font-weight: 700;
+    color: var(--vl-muted);
+}
+#vl-price-guess-widget .vl-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 2.4em;
+    margin: 0;
+    background: transparent;
+    cursor: pointer;
+    touch-action: none;
+    --vl-fill: 50%;
+}
+#vl-price-guess-widget .vl-slider:focus {
+    outline: none;
+}
+#vl-price-guess-widget .vl-slider::-webkit-slider-runnable-track {
+    height: 0.75em;
+    border-radius: 1em;
+    background: linear-gradient(90deg, #4a7676 0%, var(--vl-primary) var(--vl-fill), #dfe8e8 var(--vl-fill), #dfe8e8 100%);
+    box-shadow: inset 0 0.1em 0.2em rgba(0, 0, 0, 0.12);
+}
+#vl-price-guess-widget .vl-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 2em;
+    height: 2em;
+    margin-top: -0.625em;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #ffffff 0%, #eef5f5 45%, #c7d8d8 100%);
+    border: 0.22em solid var(--vl-primary);
+    box-shadow: 0 0.2em 0.5em rgba(0, 0, 0, 0.25);
+}
+#vl-price-guess-widget .vl-slider:focus-visible::-webkit-slider-thumb {
+    box-shadow: 0 0 0 0.3em rgba(55, 90, 90, 0.25), 0 0.2em 0.5em rgba(0, 0, 0, 0.25);
+}
+#vl-price-guess-widget .vl-slider::-moz-range-track {
+    height: 0.75em;
+    border-radius: 1em;
+    background: #dfe8e8;
+}
+#vl-price-guess-widget .vl-slider::-moz-range-progress {
+    height: 0.75em;
+    border-radius: 1em;
+    background: var(--vl-primary);
+}
+#vl-price-guess-widget .vl-slider::-moz-range-thumb {
+    width: 1.6em;
+    height: 1.6em;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #ffffff 0%, #eef5f5 45%, #c7d8d8 100%);
+    border: 0.22em solid var(--vl-primary);
+    box-shadow: 0 0.2em 0.5em rgba(0, 0, 0, 0.25);
+}
+#vl-price-guess-widget .vl-range-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.78em;
+    color: var(--vl-muted);
+    font-weight: 600;
+    margin-top: -0.1em;
+}
+#vl-price-guess-widget .vl-input-row {
+    display: flex;
+    align-items: stretch;
+    gap: 0.5em;
+    margin-top: 0.6em;
+}
+#vl-price-guess-widget .vl-input-wrap {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    border: 2px solid #d5e1e1;
+    border-radius: 0.7em;
+    background: #f8fbfb;
+    padding: 0 0.7em;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+#vl-price-guess-widget .vl-input-wrap:focus-within {
+    border-color: var(--vl-primary);
+    box-shadow: 0 0 0 0.2em rgba(55, 90, 90, 0.15);
+    background: #ffffff;
+}
+#vl-price-guess-widget .vl-guess-input {
+    flex: 1 1 auto;
+    min-width: 0;
+    width: 100%;
+    border: none;
+    background: transparent;
+    font-family: inherit;
+    font-size: max(16px, 1.05em);
+    font-weight: 700;
+    color: var(--vl-text);
+    padding: 0.55em 0;
+    outline: none;
+}
+#vl-price-guess-widget .vl-input-unit {
+    font-weight: 700;
+    color: var(--vl-muted);
+    margin-left: 0.3em;
+}
+#vl-price-guess-widget .vl-input-row .vl-btn-primary {
+    margin: 0;
+    min-width: 0;
+    flex: 0 0 auto;
+    padding: 0.7em 1em;
+}
+#vl-price-guess-widget .vl-meter {
+    margin-top: 0.75em;
+}
+#vl-price-guess-widget .vl-meter-head {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.78em;
+    font-weight: 700;
+    color: var(--vl-muted);
+    margin-bottom: 0.3em;
+}
+#vl-price-guess-widget .vl-meter-label {
+    color: var(--vl-primary);
+}
+#vl-price-guess-widget .vl-meter[data-vl-level="0"] .vl-meter-label {
+    color: #2b8a3e;
+}
+#vl-price-guess-widget .vl-meter[data-vl-level="1"] .vl-meter-label,
+#vl-price-guess-widget .vl-meter[data-vl-level="2"] .vl-meter-label {
+    color: #e8590c;
+}
+#vl-price-guess-widget .vl-meter[data-vl-level="4"] .vl-meter-label,
+#vl-price-guess-widget .vl-meter[data-vl-level="5"] .vl-meter-label {
+    color: #1971c2;
+}
+#vl-price-guess-widget .vl-meter-track {
+    position: relative;
+    height: 0.7em;
+    border-radius: 1em;
+    overflow: hidden;
+    background: linear-gradient(90deg, #4dabf7 0%, #74c0fc 25%, #ffd43b 55%, #ff922b 78%, #f03e3e 100%);
+}
+#vl-price-guess-widget .vl-meter-cover {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 100%;
+    height: 100%;
+    background: #e6eded;
+    transform-origin: right center;
+    transition: transform 0.6s cubic-bezier(0.2, 0.9, 0.3, 1.1);
+}
+#vl-price-guess-widget .vl-feedback {
+    text-align: center;
+    min-height: 2.6em;
+    margin-top: 0.55em;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.15em;
+}
+#vl-price-guess-widget .vl-fb {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35em;
+    font-weight: 800;
+    font-size: 1.05em;
+    animation: vl-fb-in 0.4s ease;
+}
+#vl-price-guess-widget .vl-fb svg {
+    width: 1.3em;
+    height: 1.3em;
+    fill: currentColor;
+}
+#vl-price-guess-widget .vl-fb[data-vl-kind="info"] {
+    font-weight: 600;
+    font-size: 0.88em;
+    color: var(--vl-muted);
+}
+#vl-price-guess-widget .vl-fb[data-vl-kind="up"] {
+    color: #e8590c;
+}
+#vl-price-guess-widget .vl-fb[data-vl-kind="up"] svg {
+    animation: vl-bob-up 0.8s ease-in-out infinite;
+}
+#vl-price-guess-widget .vl-fb[data-vl-kind="down"] {
+    color: #1971c2;
+}
+#vl-price-guess-widget .vl-fb[data-vl-kind="down"] svg {
+    animation: vl-bob-down 0.8s ease-in-out infinite;
+}
+#vl-price-guess-widget .vl-fb[data-vl-kind="hit"] {
+    color: #2b8a3e;
+    font-size: 1.2em;
+}
+#vl-price-guess-widget .vl-fb[data-vl-kind="reveal"] {
+    color: var(--vl-accent);
+}
+#vl-price-guess-widget .vl-fb[data-vl-kind="error"] {
+    color: var(--vl-accent);
+    font-size: 0.9em;
+}
+#vl-price-guess-widget .vl-fb-sub {
+    font-size: 0.82em;
+    color: var(--vl-muted);
+    line-height: 1.35;
+}
+#vl-price-guess-widget .vl-next-btn {
+    display: none;
+    width: 100%;
+    margin-top: 0.5em;
+}
+#vl-price-guess-widget .vl-guess-panel[data-vl-phase="reveal"] .vl-next-btn {
+    display: flex;
+}
+#vl-price-guess-widget .vl-guess-panel[data-vl-phase="reveal"] .vl-input-row {
+    display: none;
+}
+#vl-price-guess-widget .vl-guess-panel[data-vl-phase="reveal"] .vl-slider,
+#vl-price-guess-widget .vl-guess-panel[data-vl-phase="reveal"] .vl-range-labels {
+    opacity: 0.4;
+    pointer-events: none;
+}
+#vl-price-guess-widget .vl-stars {
+    display: flex;
+    justify-content: center;
+    gap: 0.4em;
+    margin: 0.4em 0 0.3em;
+}
+#vl-price-guess-widget .vl-star {
+    width: 2.6em;
+    height: 2.6em;
+    opacity: 0;
+    animation: vl-star-in 0.55s ease forwards;
+}
+#vl-price-guess-widget .vl-star:nth-child(2) {
+    width: 3.2em;
+    height: 3.2em;
+    margin-top: -0.4em;
+    animation-delay: 0.18s;
+}
+#vl-price-guess-widget .vl-star:nth-child(3) {
+    animation-delay: 0.36s;
+}
+#vl-price-guess-widget .vl-star svg {
+    width: 100%;
+    height: 100%;
+    fill: #dfe6e6;
+    stroke: #c5d1d1;
+    stroke-width: 1;
+}
+#vl-price-guess-widget .vl-star[data-vl-on="true"] svg {
+    fill: #fcc419;
+    stroke: #f08c00;
+    filter: drop-shadow(0 0.15em 0.2em rgba(240, 140, 0, 0.4));
+}
+#vl-price-guess-widget .vl-result-box {
+    text-align: center;
+}
+#vl-price-guess-widget .vl-result-score {
+    font-size: 1.05em;
+    font-weight: 600;
+    color: var(--vl-muted);
+    margin: 0 0 0.6em;
+}
+#vl-price-guess-widget .vl-result-score strong {
+    font-size: 1.6em;
+    color: var(--vl-primary-dark);
+}
+#vl-price-guess-widget .vl-summary {
+    list-style: none;
+    margin: 0 0 0.6em;
+    padding: 0.3em 0.6em;
+    background: #ffffff;
+    border: 1px solid #e1eaea;
+    border-radius: 0.8em;
+    text-align: left;
+}
+#vl-price-guess-widget .vl-summary li {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    padding: 0.4em 0;
+    font-size: 0.85em;
+    border-bottom: 1px dashed #e1eaea;
+}
+#vl-price-guess-widget .vl-summary li:last-child {
+    border-bottom: none;
+}
+#vl-price-guess-widget .vl-sum-name {
+    flex: 1 1 auto;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-weight: 600;
+}
+#vl-price-guess-widget .vl-sum-price {
+    flex: 0 0 auto;
+    color: var(--vl-muted);
+    font-variant-numeric: tabular-nums;
+}
+#vl-price-guess-widget .vl-sum-pts {
+    flex: 0 0 3.2em;
+    text-align: right;
+    font-weight: 800;
+    color: #e8590c;
+}
+#vl-price-guess-widget .vl-sum-pts[data-vl-hit="true"] {
+    color: #2b8a3e;
+}
+#vl-price-guess-widget .vl-result-detail {
+    font-size: 0.92em;
+    color: var(--vl-muted);
+    line-height: 1.45;
+    margin: 0 0 0.4em;
+}
+#vl-price-guess-widget .vl-code-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.3em;
+    margin: 0.3em 0 0.2em;
+    padding: 0.8em 0.8em 0.9em;
+    border: 2px dashed var(--vl-accent);
+    border-radius: 0.9em;
+    background: linear-gradient(180deg, #fff5f5, #ffe3e3);
+    animation: vl-code-in 0.5s ease 0.4s both;
+}
+#vl-price-guess-widget .vl-code-box[hidden] {
+    display: none;
+}
+#vl-price-guess-widget .vl-code-label {
+    font-size: 0.82em;
+    font-weight: 700;
+    color: var(--vl-accent);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+#vl-price-guess-widget .vl-code-value {
+    font-size: 1.6em;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    color: var(--vl-text);
+    font-family: Consolas, "Courier New", monospace;
+}
+#vl-price-guess-widget .vl-code-box .vl-btn-secondary {
+    margin: 0.2em 0 0;
+    min-width: 9em;
+    padding: 0.55em 1em;
+    border-color: var(--vl-accent);
+    color: var(--vl-accent);
+}
+#vl-price-guess-widget .vl-code-box .vl-btn-secondary[data-vl-copied="true"] {
+    background: var(--vl-accent);
+    color: #ffffff;
+}
+#vl-price-guess-widget .vl-cta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.55em;
+    justify-content: center;
+    align-items: center;
+    margin-top: 0.6em;
+    flex-shrink: 0;
+}
+#vl-price-guess-widget .vl-cta-row .vl-btn-primary,
+#vl-price-guess-widget .vl-cta-row .vl-btn-secondary {
+    margin: 0;
+    flex: 1 1 10em;
+    max-width: 15em;
+    min-width: 9.5em;
+}
+@media (max-width: 767px) {
+    .vl-popup-content {
+        border-radius: 1em;
+    }
+    #vl-price-guess-widget {
+        padding: 0.85em 0.85em 1em;
+    }
+    #vl-price-guess-widget .vl-header {
+        font-size: 1.3em;
+    }
+    #vl-price-guess-widget .vl-cta-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    #vl-price-guess-widget .vl-cta-row .vl-btn-primary,
+    #vl-price-guess-widget .vl-cta-row .vl-btn-secondary {
+        max-width: none;
+        flex: 0 0 auto;
+    }
+}
+@media (min-width: 768px) {
+    .vl-popup-content {
+        width: min(92vw, 46em);
+    }
+    #vl-price-guess-widget {
+        padding: 1.2em 1.5em 1.4em;
+    }
+    #vl-price-guess-widget [data-vl-step="intro"],
+    #vl-price-guess-widget [data-vl-step="result"] {
+        max-width: 30em;
+        width: 100%;
+        margin: 0 auto;
+    }
+    #vl-price-guess-widget .vl-play-grid {
+        display: grid;
+        grid-template-columns: 1fr 1.1fr;
+        gap: 1.1em;
+        align-items: stretch;
+    }
+    #vl-price-guess-widget .vl-card-img-wrap {
+        height: 14em;
+    }
+    #vl-price-guess-widget .vl-guess-panel {
+        justify-content: center;
+    }
+}
+@media (min-width: 1024px) {
+    .vl-popup-content {
+        width: min(90vw, 50em);
+    }
+    #vl-price-guess-widget .vl-card-img-wrap {
+        height: 15.5em;
+    }
+}
+@media (pointer: coarse) {
+    #vl-price-guess-widget .vl-slider::-webkit-slider-thumb {
+        width: 2.3em;
+        height: 2.3em;
+        margin-top: -0.775em;
+    }
+    #vl-price-guess-widget .vl-slider::-moz-range-thumb {
+        width: 1.9em;
+        height: 1.9em;
+    }
+    #vl-price-guess-widget .vl-slider {
+        height: 2.8em;
+    }
+}
+@media (hover: hover) and (pointer: fine) {
+    #vl-price-guess-widget .vl-btn-primary:hover {
+        filter: brightness(1.08);
+    }
+    #vl-price-guess-widget .vl-btn-secondary:hover {
+        background: var(--vl-soft);
+    }
+}
+@media (max-height: 700px) {
+    #vl-price-guess-widget .vl-card-img-wrap {
+        height: 8em;
+    }
+    #vl-price-guess-widget .vl-intro-hero {
+        width: 9em;
+    }
+    #vl-price-guess-widget .vl-rules li {
+        padding: 0.4em 0.7em;
+    }
+}
+@media (max-height: 700px) and (min-width: 768px) {
+    #vl-price-guess-widget .vl-card-img-wrap {
+        height: 11em;
+    }
+}
+@media (max-height: 560px) {
+    #vl-price-guess-widget .vl-card-img-wrap {
+        height: 6em;
+    }
+    #vl-price-guess-widget .vl-intro-hero {
+        display: none;
+    }
+}
+    `;
+    document.head.appendChild(vlStyle);
+
+    const formatter = new Intl.NumberFormat("tr-TR", {
+        maximumFractionDigits: 2,
+        minimumFractionDigits: 2,
+    });
+    const vlNumFmt = new Intl.NumberFormat("tr-TR", {
+        maximumFractionDigits: 2,
+    });
+    const vlFmtPrice = (value) => `${formatter.format(value)} TL`;
+
+    const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (c) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        "\"": "&quot;",
+        "'": "&#39;",
+    })[c]);
+
+    const shuffle = (arr) => {
+        const a = arr.slice();
+        for (let i = a.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            const t = a[i];
+            a[i] = a[j];
+            a[j] = t;
+        }
+        return a;
+    };
+
+    const vlStepFor = (price) => {
+        if (price < 50) {
+            return 1;
+        }
+        if (price < 500) {
+            return 5;
+        }
+        if (price < 2000) {
+            return 10;
+        }
+        if (price < 10000) {
+            return 50;
+        }
+        return 100;
+    };
+
+    const buildRounds = () => shuffle(vlSource).slice(0, roundCount).map((prod) => {
+        const price = parseFloat(prod.dprice);
+        const step = vlStepFor(price);
+        const low = 0.25 + Math.random() * 0.25;
+        const high = 1.7 + Math.random() * 0.8;
+        return {
+            title: prod.title.trim(),
+            img: typeof prod.img === "string" && prod.img ? prod.img : vlPlaceholder,
+            price,
+            step,
+            min: Math.max(step, Math.floor((price * low) / step) * step),
+            max: Math.ceil((price * high) / step) * step,
+            guesses: [],
+            points: 0,
+            hit: false,
+        };
+    });
+
+    const vlParseGuess = (str) => {
+        const s = String(str).replace(/[^\d.,]/g, "");
+        let norm = s.replace(/\./g, "");
+        if (s.indexOf(",") > -1) {
+            norm = s.replace(/\./g, "").replace(",", ".");
+        } else if (/^\d+\.\d{1,2}$/.test(s)) {
+            norm = s;
+        }
+        const n = parseFloat(norm);
+        return Number.isFinite(n) && n > 0 ? n : NaN;
+    };
+
+    const vlHeatLevel = (diff) => CONFIG.heatLevels.findIndex((level) => diff <= level.max);
+
+    const iconArrow = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 9h-5v9H9v-9H4z"/></svg>`;
+    const iconStar = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4l-5.9 3.1 1.2-6.5L2.5 9.4l6.6-.9z"/></svg>`;
+
+    const popup = document.createElement("div");
+    popup.className = "vl-popup-overlay";
+    popup.innerHTML = `
+        <div class="vl-popup-content" role="dialog" aria-modal="true" aria-label="Fiyatı Tahmin Et">
+            <button type="button" class="vl-sound-button" aria-label="Sesi aç/kapat">
+                <svg class="vl-sound-on" viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16 9a4 4 0 0 1 0 6"/><path d="M18.5 6.5a7.5 7.5 0 0 1 0 11"/></svg>
+                <svg class="vl-sound-off" viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M17 9l5 6"/><path d="M22 9l-5 6"/></svg>
+            </button>
+            <button type="button" class="vl-close-button" aria-label="Kapat">
+                <svg viewBox="0 0 24 24"><path d="M6 6l12 12"/><path d="M18 6L6 18"/></svg>
+            </button>
+            <section id="vl-price-guess-widget">
+                <div class="vl-step" data-vl-step="intro" data-vl-state="active">
+                    <div class="vl-intro-hero" aria-hidden="true">
+                        <svg viewBox="0 0 220 140">
+                            <defs>
+                                <linearGradient id="vl-pg-tag" x1="0" y1="0" x2="1" y2="1">
+                                    <stop offset="0" stop-color="#ff6b6b"/>
+                                    <stop offset="1" stop-color="#c92a2a"/>
+                                </linearGradient>
+                                <linearGradient id="vl-pg-coin" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="0" stop-color="#ffe066"/>
+                                    <stop offset="1" stop-color="#f08c00"/>
+                                </linearGradient>
+                                <radialGradient id="vl-pg-blob" cx="50%" cy="50%" r="50%">
+                                    <stop offset="0" stop-color="#d3e4e4"/>
+                                    <stop offset="1" stop-color="#d3e4e4" stop-opacity="0"/>
+                                </radialGradient>
+                            </defs>
+                            <ellipse cx="110" cy="72" rx="100" ry="66" fill="url(#vl-pg-blob)"/>
+                            <ellipse cx="54" cy="122" rx="24" ry="7" fill="#c77700"/>
+                            <ellipse cx="54" cy="116" rx="24" ry="7" fill="url(#vl-pg-coin)"/>
+                            <ellipse cx="54" cy="108" rx="24" ry="7" fill="#c77700"/>
+                            <ellipse cx="54" cy="102" rx="24" ry="7" fill="url(#vl-pg-coin)"/>
+                            <text x="54" y="106" text-anchor="middle" font-family="Arial" font-size="10" font-weight="700" fill="#a35f00">TL</text>
+                            <path d="M84 28 C70 20 60 30 62 42" fill="none" stroke="#7c8f8f" stroke-width="2.5"/>
+                            <g transform="rotate(-14 120 64)">
+                                <path d="M80 36 H160 A10 10 0 0 1 170 46 V86 A10 10 0 0 1 160 96 H80 L56 66 Z" fill="url(#vl-pg-tag)"/>
+                                <path d="M84 42 H156" stroke="#fff" stroke-opacity=".35" stroke-width="4" stroke-linecap="round"/>
+                                <circle cx="72" cy="66" r="6" fill="#fff"/>
+                                <text x="122" y="80" text-anchor="middle" font-family="Arial" font-size="38" font-weight="800" fill="#fff">?</text>
+                            </g>
+                            <circle cx="170" cy="96" r="19" fill="#e7f5ff" fill-opacity=".7" stroke="#375a5a" stroke-width="6"/>
+                            <path d="M184 110 L200 126" stroke="#375a5a" stroke-width="9" stroke-linecap="round"/>
+                            <path d="M162 88 A10 10 0 0 1 172 84" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+                            <path d="M190 30 l3 8 8 3 -8 3 -3 8 -3 -8 -8 -3 8 -3z" fill="#ffd43b"/>
+                            <path d="M30 40 l2 5 5 2 -5 2 -2 5 -2 -5 -5 -2 5 -2z" fill="#4dabf7"/>
+                        </svg>
+                    </div>
+                    <h2 class="vl-header">Fiyatı Tahmin Et!</h2>
+                    <p class="vl-intro-text">${roundCount} ürünün fiyatını tahmin et, en az ${rewardScore} puan topla ve ${escapeHtml(CONFIG.discountLabel)} kodunu kap!</p>
+                    <ul class="vl-rules">
+                        <li>
+                            <span class="vl-rule-icon"><svg viewBox="0 0 24 24"><path d="M3 12h18"/><circle cx="14" cy="12" r="3.5"/></svg></span>
+                            <span>Kaydırıcıyı sürükle ya da fiyatı kutuya yaz.</span>
+                        </li>
+                        <li>
+                            <span class="vl-rule-icon"><svg viewBox="0 0 24 24"><path d="M8 4v16"/><path d="M4 8l4-4 4 4"/><path d="M16 20V4"/><path d="M12 16l4 4 4-4"/></svg></span>
+                            <span>Her ürün için ${CONFIG.attempts} hakkın var. İpuçları “Daha yüksek” ya da “Daha düşük” der.</span>
+                        </li>
+                        <li>
+                            <span class="vl-rule-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5"/></svg></span>
+                            <span>%${Math.round(CONFIG.bullseyeRatio * 100)} yakınlık tam isabettir: ${CONFIG.maxPoints} puan! Ne kadar yakınsan o kadar puan.</span>
+                        </li>
+                    </ul>
+                    <button type="button" class="vl-btn-primary vl-start-btn">Oyuna Başla</button>
+                </div>
+                <div class="vl-step" data-vl-step="play">
+                    <div class="vl-hud">
+                        <div class="vl-progress"></div>
+                        <div class="vl-score-pill">Puan <span class="vl-score-value">0</span></div>
+                    </div>
+                    <div class="vl-play-grid">
+                        <div class="vl-product-card" data-vl-anim="in-a">
+                            <div class="vl-card-img-wrap">
+                                <img class="vl-card-img" alt="" />
+                            </div>
+                            <p class="vl-card-title"></p>
+                            <div class="vl-price-tag" data-vl-state="hidden"><span class="vl-price-text"></span></div>
+                        </div>
+                        <div class="vl-guess-panel" data-vl-phase="guess">
+                            <div class="vl-panel-top">
+                                <span>Tahminin</span>
+                                <span class="vl-attempts" aria-label="Kalan hak"></span>
+                            </div>
+                            <div class="vl-guess-display"><span class="vl-guess-value">0</span><span class="vl-guess-unit">TL</span></div>
+                            <input type="range" class="vl-slider" aria-label="Fiyat tahmini" />
+                            <div class="vl-range-labels"><span class="vl-range-min"></span><span class="vl-range-max"></span></div>
+                            <div class="vl-input-row">
+                                <label class="vl-input-wrap">
+                                    <input type="text" inputmode="decimal" autocomplete="off" maxlength="12" class="vl-guess-input" aria-label="Fiyatı yaz" />
+                                    <span class="vl-input-unit">TL</span>
+                                </label>
+                                <button type="button" class="vl-btn-primary vl-guess-btn">Tahmin Et</button>
+                            </div>
+                            <div class="vl-meter" data-vl-level="">
+                                <div class="vl-meter-head"><span>Isı ölçer</span><span class="vl-meter-label"></span></div>
+                                <div class="vl-meter-track"><span class="vl-meter-cover"></span></div>
+                            </div>
+                            <div class="vl-feedback" aria-live="polite"></div>
+                            <button type="button" class="vl-btn-primary vl-next-btn">Sonraki Ürün</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="vl-step" data-vl-step="result">
+                    <div class="vl-result-box"></div>
+                    <div class="vl-code-box" hidden>
+                        <span class="vl-code-label">${escapeHtml(CONFIG.discountLabel)} kodun</span>
+                        <strong class="vl-code-value">${escapeHtml(CONFIG.discountCode)}</strong>
+                        <button type="button" class="vl-btn-secondary vl-copy-code">Kodu Kopyala</button>
+                    </div>
+                    <div class="vl-cta-row">
+                        <button type="button" class="vl-btn-secondary vl-replay-btn">Tekrar Oyna</button>
+                        <a href="${escapeHtml(CONFIG.ctaUrl)}" class="vl-btn-primary vl-result-shop">Alışverişe Devam</a>
+                    </div>
+                </div>
+            </section>
+            <div class="vl-fx-layer"></div>
+        </div>
+    `;
+
+    const root = popup.querySelector("#vl-price-guess-widget");
+    const stepIntro = root.querySelector('[data-vl-step="intro"]');
+    const stepPlay = root.querySelector('[data-vl-step="play"]');
+    const stepResult = root.querySelector('[data-vl-step="result"]');
+    const vlProgressEl = stepPlay.querySelector(".vl-progress");
+    const vlScoreEl = stepPlay.querySelector(".vl-score-value");
+    const vlCard = stepPlay.querySelector(".vl-product-card");
+    const vlImgWrap = vlCard.querySelector(".vl-card-img-wrap");
+    const vlImg = vlCard.querySelector(".vl-card-img");
+    const vlTitle = vlCard.querySelector(".vl-card-title");
+    const vlPriceTag = vlCard.querySelector(".vl-price-tag");
+    const vlPriceText = vlCard.querySelector(".vl-price-text");
+    const vlPanel = stepPlay.querySelector(".vl-guess-panel");
+    const vlAttemptsEl = vlPanel.querySelector(".vl-attempts");
+    const vlGuessValue = vlPanel.querySelector(".vl-guess-value");
+    const vlSlider = vlPanel.querySelector(".vl-slider");
+    const vlRangeMin = vlPanel.querySelector(".vl-range-min");
+    const vlRangeMax = vlPanel.querySelector(".vl-range-max");
+    const vlInput = vlPanel.querySelector(".vl-guess-input");
+    const vlGuessBtn = vlPanel.querySelector(".vl-guess-btn");
+    const vlMeter = vlPanel.querySelector(".vl-meter");
+    const vlMeterLabel = vlPanel.querySelector(".vl-meter-label");
+    const vlMeterCover = vlPanel.querySelector(".vl-meter-cover");
+    const vlFeedbackEl = vlPanel.querySelector(".vl-feedback");
+    const vlNextBtn = vlPanel.querySelector(".vl-next-btn");
+    const vlResultBox = stepResult.querySelector(".vl-result-box");
+    const vlCodeBox = stepResult.querySelector(".vl-code-box");
+    const vlCopyBtn = stepResult.querySelector(".vl-copy-code");
+    const vlReplayBtn = stepResult.querySelector(".vl-replay-btn");
+    const vlFx = popup.querySelector(".vl-fx-layer");
+    const closeButton = popup.querySelector(".vl-close-button");
+    const soundButton = popup.querySelector(".vl-sound-button");
+    const vlStartBtn = root.querySelector(".vl-start-btn");
+    const copyLabel = vlCopyBtn.textContent;
+
+    let vlAudio = null;
+    let vlLastTick = 0;
+
+    const playSound = (name) => {
+        if (popup.dataset.vlMuted === "true") {
+            return;
+        }
+        try {
+            if (!vlAudio) {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                if (!AudioCtx) {
+                    return;
+                }
+                vlAudio = new AudioCtx();
+            }
+            if (vlAudio.state === "suspended") {
+                vlAudio.resume();
+            }
+            const now = vlAudio.currentTime;
+            SOUNDS[name].forEach(([freq, start, dur, type, vol, slide]) => {
+                const osc = vlAudio.createOscillator();
+                const gain = vlAudio.createGain();
+                const t0 = now + start;
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, t0);
+                if (slide) {
+                    osc.frequency.exponentialRampToValueAtTime(slide, t0 + dur);
+                }
+                gain.gain.setValueAtTime(0.0001, t0);
+                gain.gain.exponentialRampToValueAtTime(vol, t0 + 0.015);
+                gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+                osc.connect(gain);
+                gain.connect(vlAudio.destination);
+                osc.start(t0);
+                osc.stop(t0 + dur + 0.05);
+            });
+        } catch {
+            vlAudio = null;
+        }
+    };
+
+    const fxPoint = (el) => {
+        const a = el.getBoundingClientRect();
+        const b = vlFx.getBoundingClientRect();
+        return [((a.left + a.width / 2 - b.left) / b.width) * 100, ((a.top + a.height / 2 - b.top) / b.height) * 100];
+    };
+
+    const burstConfetti = (el, count) => {
+        const [x, y] = fxPoint(el);
+        for (let i = 0; i < count; i++) {
+            const piece = document.createElement("span");
+            const angle = Math.random() * Math.PI * 2;
+            const dist = 3 + Math.random() * 8;
+            piece.className = "vl-confetti";
+            piece.style.left = `${x}%`;
+            piece.style.top = `${y}%`;
+            piece.style.background = CONFIG.confettiColors[i % CONFIG.confettiColors.length];
+            piece.style.setProperty("--vl-x", `${(Math.cos(angle) * dist).toFixed(2)}em`);
+            piece.style.setProperty("--vl-y", `${(Math.sin(angle) * dist - 3).toFixed(2)}em`);
+            piece.style.setProperty("--vl-r", `${Math.round(Math.random() * 720 - 360)}deg`);
+            piece.addEventListener("animationend", () => piece.remove(), { once: true });
+            vlFx.appendChild(piece);
+        }
+    };
+
+    const popScore = (el, points) => {
+        const [x, y] = fxPoint(el);
+        const pop = document.createElement("span");
+        pop.className = "vl-score-pop";
+        pop.textContent = `+${points}`;
+        pop.style.left = `${x}%`;
+        pop.style.top = `${y}%`;
+        pop.addEventListener("animationend", () => pop.remove(), { once: true });
+        vlFx.appendChild(pop);
+    };
+
+    const setFeedback = (kind, main, sub) => {
+        const icon = kind === "up" || kind === "down" ? iconArrow : "";
+        vlFeedbackEl.innerHTML = `<span class="vl-fb" data-vl-kind="${kind}">${icon}${escapeHtml(main)}</span>${sub ? `<span class="vl-fb-sub">${escapeHtml(sub)}</span>` : ""}`;
+    };
+
+    const setStep = (name) => {
+        [stepIntro, stepPlay, stepResult].forEach((el) => {
+            el.dataset.vlState = el.getAttribute("data-vl-step") === name ? "active" : "";
+        });
+        vlFx.querySelectorAll(".vl-score-pop").forEach((el) => el.remove());
+        root.scrollTop = 0;
+    };
+
+    let vlRounds = [];
+    let vlRoundIndex = 0;
+    let vlScore = 0;
+    let vlGuess = 0;
+
+    const currentRound = () => vlRounds[vlRoundIndex];
+
+    const renderScore = () => {
+        vlScoreEl.innerHTML = `<span class="vl-bump">${vlScore}</span>`;
+    };
+
+    const renderProgress = () => {
+        const dots = vlRounds.map((round, i) => {
+            let state = "";
+            if (i < vlRoundIndex || (i === vlRoundIndex && vlPanel.dataset.vlPhase === "reveal")) {
+                state = round.hit ? "hit" : "done";
+            } else if (i === vlRoundIndex) {
+                state = "current";
+            }
+            return `<span class="vl-progress-dot" data-vl-state="${state}"></span>`;
+        }).join("");
+        vlProgressEl.innerHTML = `<span>Ürün ${vlRoundIndex + 1}/${roundCount}</span><span class="vl-progress-dots">${dots}</span>`;
+    };
+
+    const renderAttempts = () => {
+        const used = currentRound().guesses.length;
+        vlAttemptsEl.innerHTML = Array.from({ length: CONFIG.attempts }, (_, i) => `<span class="vl-attempt-dot" data-vl-used="${i < used}"></span>`).join("");
+    };
+
+    const renderMeter = (diff) => {
+        if (diff === null) {
+            vlMeter.dataset.vlLevel = "";
+            vlMeterLabel.textContent = "Tahmin bekleniyor";
+            vlMeterCover.style.transform = "scaleX(1)";
+            return;
+        }
+        const level = vlHeatLevel(diff);
+        const closeness = Math.max(0.04, 1 - Math.min(1, diff / 0.8));
+        vlMeter.dataset.vlLevel = String(level);
+        vlMeterLabel.textContent = CONFIG.heatLevels[level].label;
+        vlMeterCover.style.transform = `scaleX(${(1 - closeness).toFixed(3)})`;
+    };
+
+    const setGuess = (value, fromInput) => {
+        const round = currentRound();
+        vlGuess = value;
+        vlSlider.value = String(value);
+        const pct = ((Math.min(round.max, Math.max(round.min, value)) - round.min) / (round.max - round.min)) * 100;
+        vlSlider.style.setProperty("--vl-fill", `${pct.toFixed(1)}%`);
+        vlGuessValue.textContent = vlNumFmt.format(value);
+        if (!fromInput) {
+            vlInput.value = vlNumFmt.format(value);
+        }
+    };
+
+    const setRange = (min, max) => {
+        const round = currentRound();
+        round.min = min;
+        round.max = Math.max(max, min + round.step);
+        vlSlider.min = String(round.min);
+        vlSlider.max = String(round.max);
+        vlSlider.step = String(round.step);
+        vlRangeMin.textContent = `${vlNumFmt.format(round.min)} TL`;
+        vlRangeMax.textContent = `${vlNumFmt.format(round.max)} TL`;
+        const span = (round.max - round.min) / round.step;
+        setGuess(round.min + Math.round(span * (0.3 + Math.random() * 0.4)) * round.step);
+    };
+
+    const showRound = () => {
+        const round = currentRound();
+        vlPanel.dataset.vlPhase = "guess";
+        vlCard.dataset.vlAnim = vlRoundIndex % 2 === 0 ? "in-a" : "in-b";
+        vlImg.src = round.img;
+        vlImg.alt = round.title;
+        vlImgWrap.style.setProperty("--vl-img", `url(${JSON.stringify(round.img)})`);
+        vlTitle.textContent = round.title;
+        vlPriceTag.dataset.vlState = "hidden";
+        vlPriceText.textContent = "? ? ? TL";
+        setRange(round.min, round.max);
+        renderAttempts();
+        renderProgress();
+        renderMeter(null);
+        setFeedback("info", "Kaydırıcıyı sürükle veya fiyatı yaz, sonra “Tahmin Et”e bas.");
+    };
+
+    const finishRound = (points, hit, diff) => {
+        const round = currentRound();
+        round.points = points;
+        round.hit = hit;
+        vlScore += points;
+        vlPanel.dataset.vlPhase = "reveal";
+        vlPriceText.textContent = vlFmtPrice(round.price);
+        vlPriceTag.dataset.vlState = "revealed";
+        vlNextBtn.textContent = vlRoundIndex + 1 >= roundCount ? "Sonuçları Gör" : "Sonraki Ürün";
+        renderScore();
+        renderAttempts();
+        renderProgress();
+        if (hit) {
+            setFeedback("hit", `Tam isabet! +${points} puan`, `Gerçek fiyat ${vlFmtPrice(round.price)}.`);
+            playSound("bullseye");
+            burstConfetti(vlPriceTag, 36);
+        } else {
+            setFeedback("reveal", `Gerçek fiyat ${vlFmtPrice(round.price)}`, `Son tahminin %${Math.round(diff * 100)} uzaktaydı. +${points} puan`);
+            playSound("reveal");
+        }
+        if (points > 0) {
+            popScore(vlPriceTag, points);
+        }
+    };
+
+    const submitGuess = () => {
+        if (vlPanel.dataset.vlPhase !== "guess") {
+            return;
+        }
+        const typed = vlParseGuess(vlInput.value);
+        if (Number.isNaN(typed)) {
+            setFeedback("error", "Lütfen geçerli bir fiyat gir.");
+            playSound("error");
+            return;
+        }
+        if (typed !== vlGuess) {
+            setGuess(typed, true);
+        }
+        const round = currentRound();
+        const guess = vlGuess;
+        const diff = Math.abs(guess - round.price) / round.price;
+        round.guesses.push(guess);
+        renderMeter(diff);
+        playSound("submit");
+        if (diff <= CONFIG.bullseyeRatio) {
+            finishRound(CONFIG.maxPoints - (round.guesses.length - 1) * CONFIG.bullseyePenalty, true, diff);
+            return;
+        }
+        if (round.guesses.length >= CONFIG.attempts) {
+            finishRound(Math.round(CONFIG.missPoints * Math.max(0, 1 - diff / CONFIG.zeroPointRatio)), false, diff);
+            return;
+        }
+        const higher = guess < round.price;
+        const left = CONFIG.attempts - round.guesses.length;
+        const newMin = higher ? Math.max(round.min, Math.floor(guess / round.step) * round.step) : round.min;
+        const newMax = higher ? round.max : Math.min(round.max, Math.ceil(guess / round.step) * round.step);
+        setRange(newMin, newMax);
+        renderAttempts();
+        setFeedback(higher ? "up" : "down", higher ? "Daha YÜKSEK!" : "Daha DÜŞÜK!", `${vlNumFmt.format(guess)} TL dedin. Kalan hak: ${left}`);
+        window.setTimeout(() => playSound(higher ? "higher" : "lower"), 90);
+        if (diff > 0.45) {
+            vlImgWrap.dataset.vlShake = "true";
+            playSound("far");
+        }
+    };
+
+    const showResult = () => {
+        setStep("result");
+        const ratio = vlScore / maxTotal;
+        const won = vlScore >= rewardScore;
+        let stars = 0;
+        if (ratio >= 0.75) {
+            stars = 3;
+        } else if (ratio >= 0.5) {
+            stars = 2;
+        } else if (won) {
+            stars = 1;
+        }
+        const titles = ["Bu Sefer Olmadı", "Tebrikler!", "Harika Tahmin!", "Fiyat Ustası!"];
+        const starHtml = [0, 1, 2].map((i) => `<span class="vl-star" data-vl-on="${i < stars}">${iconStar}</span>`).join("");
+        const rows = vlRounds.map((round) => `<li><span class="vl-sum-name">${escapeHtml(round.title)}</span><span class="vl-sum-price">${vlFmtPrice(round.price)}</span><span class="vl-sum-pts" data-vl-hit="${round.hit}">+${round.points}</span></li>`).join("");
+        vlResultBox.innerHTML = `
+            <div class="vl-stars">${starHtml}</div>
+            <h2 class="vl-header">${titles[stars]}</h2>
+            <p class="vl-result-score"><strong>${vlScore}</strong> / ${maxTotal} puan</p>
+            <ul class="vl-summary">${rows}</ul>
+            <p class="vl-result-detail">${won ? "İndirim kodun hazır! Sepette kullanmak için kopyala." : `İndirim kodu için en az ${rewardScore} puan gerekiyordu. Bir tur daha dene!`}</p>
+        `;
+        vlCodeBox.hidden = !won;
+        vlCopyBtn.textContent = copyLabel;
+        vlCopyBtn.dataset.vlCopied = "false";
+        if (won) {
+            playSound("win");
+            burstConfetti(vlResultBox.querySelector(".vl-stars"), 60);
+        } else {
+            playSound("lose");
+        }
+    };
+
+    const startGame = () => {
+        vlRounds = buildRounds();
+        vlRoundIndex = 0;
+        vlScore = 0;
+        renderScore();
+        setStep("play");
+        showRound();
+    };
+
+    const onKeyDown = (e) => {
+        if (e.key === "Escape") {
+            closePopup();
+        }
+    };
+
+    const closePopup = () => {
+        if (popup.dataset.state !== "open") {
+            return;
+        }
+        popup.dataset.state = "closing";
+        document.removeEventListener("keydown", onKeyDown);
+        const onClosed = (e) => {
+            if (e.target !== popup) {
+                return;
+            }
+            popup.removeEventListener("animationend", onClosed);
+            popup.remove();
+            vlStyle.remove();
+            if (vlAudio) {
+                vlAudio.close().catch(() => {});
+                vlAudio = null;
+            }
+        };
+        popup.addEventListener("animationend", onClosed);
+    };
+
+    const fallbackCopy = () => {
+        const ta = document.createElement("textarea");
+        ta.value = CONFIG.discountCode;
+        ta.setAttribute("readonly", "");
+        ta.style.position = "fixed";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.select();
+        try {
+            return document.execCommand("copy");
+        } catch {
+            return false;
+        } finally {
+            document.body.removeChild(ta);
+        }
+    };
+
+    const flashCopied = () => {
+        vlCopyBtn.textContent = "Kopyalandı ✓";
+        vlCopyBtn.dataset.vlCopied = "true";
+        playSound("copy");
+        window.setTimeout(() => {
+            if (popup.isConnected) {
+                vlCopyBtn.textContent = copyLabel;
+                vlCopyBtn.dataset.vlCopied = "false";
+            }
+        }, 2000);
+    };
+
+    popup.addEventListener("click", (e) => {
+        if (e.target === popup) {
+            closePopup();
+        }
+    });
+
+    closeButton.addEventListener("click", closePopup);
+
+    soundButton.addEventListener("click", () => {
+        popup.dataset.vlMuted = popup.dataset.vlMuted === "true" ? "false" : "true";
+        playSound("submit");
+    });
+
+    document.addEventListener("keydown", onKeyDown);
+
+    vlImg.addEventListener("error", () => {
+        if (vlImg.getAttribute("src") !== vlPlaceholder) {
+            vlImg.src = vlPlaceholder;
+            vlImgWrap.style.setProperty("--vl-img", `url(${JSON.stringify(vlPlaceholder)})`);
+        }
+    });
+
+    vlImgWrap.addEventListener("animationend", () => {
+        vlImgWrap.dataset.vlShake = "false";
+    });
+
+    vlSlider.addEventListener("input", () => {
+        setGuess(parseFloat(vlSlider.value));
+        const now = Date.now();
+        if (now - vlLastTick > 60) {
+            vlLastTick = now;
+            playSound("tick");
+        }
+    });
+
+    vlInput.addEventListener("input", () => {
+        const typed = vlParseGuess(vlInput.value);
+        if (!Number.isNaN(typed)) {
+            setGuess(typed, true);
+        }
+    });
+
+    vlInput.addEventListener("blur", () => {
+        vlInput.value = vlNumFmt.format(vlGuess);
+    });
+
+    vlInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+            e.preventDefault();
+            submitGuess();
+        }
+    });
+
+    vlGuessBtn.addEventListener("click", submitGuess);
+
+    vlNextBtn.addEventListener("click", () => {
+        vlRoundIndex += 1;
+        if (vlRoundIndex >= roundCount) {
+            showResult();
+        } else {
+            showRound();
+        }
+    });
+
+    vlReplayBtn.addEventListener("click", () => {
+        playSound("submit");
+        startGame();
+    });
+
+    vlStartBtn.addEventListener(
+        "click",
+        () => {
+            try {
+                const _vlc = "<%VLSendClickFunc%>";
+                if (_vlc.indexOf("<%") === -1) {
+                    new Function(_vlc)();
+                }
+            } catch {}
+            playSound("submit");
+            startGame();
+        },
+        { once: true }
+    );
+
+    vlCopyBtn.addEventListener("click", () => {
+        if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+            navigator.clipboard.writeText(CONFIG.discountCode).then(flashCopied).catch(() => {
+                if (fallbackCopy()) {
+                    flashCopied();
+                }
+            });
+        } else if (fallbackCopy()) {
+            flashCopied();
+        }
+    });
+
+    document.body.appendChild(popup);
+    popup.dataset.state = "open";
+
+    try {
+        const _vli = "<%VLSendImpressionFunc%>";
+        if (_vli.indexOf("<%") === -1) {
+            new Function(_vli)();
+        }
+    } catch {}
+}

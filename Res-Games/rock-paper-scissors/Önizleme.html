@@ -1,0 +1,2070 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Taş Kağıt Makas</title>
+</head>
+
+<body>
+  <script>
+const CONFIG = {
+  rootId: "vl-rps-root",
+  styleId: "vl-rps-style",
+  title: "Taş Kağıt Makas",
+  subtitle: "Klasik el oyunu — net hareketlerle bilgisayara karşı oyna.",
+  matchTarget: 3,
+  howHeadingPlay: "Nasıl oynanır?",
+  howStep1: "Taş, makası kırar. Makas, kağıdı keser. Kağıt, taşı sarar.",
+  howStep2: "Aşağıdaki üç elden birine dokun: yumruk taş, açık avuç kağıt, iki parmak makas.",
+  howStep3: "TAŞ... KAĞIT... MAKAS! sayımından sonra iki el de aynı anda açılır.",
+  howHeadingReward: "Ödül ve maç",
+  howReward: "Bu maçta ilk 3 puanı alan kazanır (berabere turlarda skor değişmez). Maçı sen kazanırsan tek kullanımlık indirim kupon kodunu ekrandan kopyalayabilirsin.",
+  ruleLine1: "Taş makası kırar.",
+  ruleLine2: "Makas kağıdı keser.",
+  ruleLine3: "Kağıt taşı sarar.",
+  playCta: "Oyuna Başla",
+  closeLabel: "Kapat",
+  choiceRock: "Taş",
+  choicePaper: "Kağıt",
+  choiceScissors: "Makas",
+  labelYou: "Sen",
+  labelComputer: "Bilgisayar",
+  scoreHint: "İlk {n} galibiyet maçı kazanır",
+  promptPick: "Bir el seç!",
+  countWords: ["TAŞ...", "KAĞIT...", "MAKAS!"],
+  pumpMs: 500,
+  msgRoundWin: "Bu turu sen kazandın!",
+  msgRoundLose: "Bu turu bilgisayar kazandı.",
+  msgRoundDraw: "Berabere — skor aynı kaldı.",
+  msgMatchWin: "Tebrikler! Maçı kazandın.",
+  msgMatchLose: "Maçı bilgisayar kazandı. Yeni maçta şansın yaver gider!",
+  lastRoundLabel: "Son tur",
+  couponTitle: "İndirim kuponun",
+  couponBody: "Ödeme ekranında aşağıdaki kodu yapıştır.",
+  couponCode: "VL-RPS-15-2026",
+  copyCouponCta: "Kodu kopyala",
+  copyCouponOk: "Kod panoya kopyalandı.",
+  copyCouponFail: "Kopyalama başarısız — kodu elle seçip kopyalayabilirsin.",
+  newMatchCta: "Yeni maç",
+  choices: ["rock", "paper", "scissors"],
+  cpuFavorPlayer: 0.58
+};
+
+const handAltFor = (type) => {
+  if (type === "rock") return CONFIG.choiceRock;
+  if (type === "paper") return CONFIG.choicePaper;
+  return CONFIG.choiceScissors;
+};
+
+const rpsFinger = (x, y, w, h, rot, nail) => {
+  const r = h / 2;
+  const t = rot ? ` transform="rotate(${rot} ${x + 4} ${y + r})"` : "";
+  const nailEl = nail
+    ? `<rect x="${x + w - 15}" y="${y + 3}" width="11" height="${h - 6}" rx="${(h - 6) / 2}" fill="#ffe9da" stroke="#c98a66" stroke-width="1.5"/>`
+    : `<path d="M${x + w - 9} ${y + 4} Q${x + w - 4} ${y + r} ${x + w - 9} ${y + h - 4}" fill="none" stroke="#b9714a" stroke-opacity="0.5" stroke-width="2"/>`;
+  return `<g${t}><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${r}" fill="url(#vlRpsSkinFinger)"/><path d="M${x + r} ${y + 4} H${x + w - r - 3}" fill="none" stroke="#ffffff" stroke-opacity="0.5" stroke-width="2.5"/>${nailEl}</g>`;
+};
+
+const rpsArm = (side) => `<ellipse cx="104" cy="128" rx="78" ry="7" fill="#000000" opacity="0.18" stroke="none"/>
+<path d="M18 56 Q44 50 66 48 L66 106 Q42 104 18 100 Z" fill="url(#vlRpsSkin)"/>
+<path d="M30 96 Q48 100 64 100" fill="none" stroke="#b9714a" stroke-opacity="0.4" stroke-width="2.5"/>
+<rect x="2" y="42" width="30" height="72" rx="8" fill="url(#vlRpsCuff-${side})" stroke="#1d2433"/>
+<rect x="19" y="45" width="6" height="66" rx="3" fill="#ffffff" opacity="0.3" stroke="none"/>`;
+
+const rpsPalm = (w) => `<rect x="50" y="38" width="${w}" height="70" rx="27" fill="url(#vlRpsSkin)"/>
+<ellipse cx="${50 + w * 0.45}" cy="90" rx="${w * 0.32}" ry="10" fill="#c9825a" opacity="0.22" stroke="none"/>
+<path d="M60 48 Q${50 + w / 2} 42 ${44 + w} 50" fill="none" stroke="#ffffff" stroke-opacity="0.45" stroke-width="3"/>`;
+
+const RPS_HAND_PARTS = {
+  rock: `${rpsPalm(82)}
+${rpsFinger(106, 40, 46, 18, 0, false)}
+${rpsFinger(108, 57, 46, 18, 0, false)}
+${rpsFinger(107, 74, 44, 17, 0, false)}
+${rpsFinger(104, 90, 40, 16, 0, false)}
+<path d="M62 52 Q66 34 92 33 L134 36 Q144 38 143 46 Q142 54 132 54 L96 55 Q76 58 62 60 Z" fill="url(#vlRpsSkinFinger)"/>
+<rect x="124" y="39" width="13" height="10" rx="5" fill="#ffe9da" stroke="#c98a66" stroke-width="1.5"/>
+<path d="M74 40 Q92 37 116 39" fill="none" stroke="#ffffff" stroke-opacity="0.55" stroke-width="2.5"/>`,
+  paper: `${rpsFinger(78, 40, 46, 18, -55, true)}
+${rpsFinger(96, 40, 80, 16, -4, true)}
+${rpsFinger(98, 57, 88, 16, 0, true)}
+${rpsFinger(96, 74, 80, 15, 3, true)}
+${rpsFinger(92, 90, 64, 14, 7, true)}
+${rpsPalm(68)}
+<path d="M68 62 Q88 72 108 62" fill="none" stroke="#b9714a" stroke-opacity="0.45" stroke-width="2.5"/>
+<path d="M64 80 Q86 92 110 84" fill="none" stroke="#b9714a" stroke-opacity="0.45" stroke-width="2.5"/>`,
+  scissors: `${rpsFinger(98, 38, 86, 16, -15, true)}
+${rpsFinger(98, 56, 90, 16, 13, true)}
+${rpsPalm(78)}
+${rpsFinger(106, 74, 40, 17, 0, false)}
+${rpsFinger(104, 90, 36, 16, 0, false)}
+<path d="M64 70 Q90 66 128 72 Q138 74 137 81 Q136 88 126 88 L92 88 Q72 88 64 84 Z" fill="url(#vlRpsSkinFinger)"/>
+<rect x="118" y="75" width="13" height="10" rx="5" fill="#ffe9da" stroke="#c98a66" stroke-width="1.5"/>
+<path d="M74 73 Q94 70 114 74" fill="none" stroke="#ffffff" stroke-opacity="0.55" stroke-width="2.5"/>`
+};
+
+const handImgHtml = (type, side) => {
+  const alt = handAltFor(type);
+  const part = RPS_HAND_PARTS[type] || RPS_HAND_PARTS.rock;
+  return `<svg class="rps-hand-img" viewBox="0 0 200 140" role="img" aria-label="${alt}" focusable="false"><g stroke="#8c4f2f" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">${rpsArm(side === "cpu" ? "cpu" : "you")}${part}</g></svg>`;
+};
+
+const RPS_TROPHY_SVG = `<svg viewBox="0 0 120 120" aria-hidden="true" focusable="false">
+<path d="M30 26 H14 Q12 52 36 58" fill="none" stroke="#d9a520" stroke-width="6" stroke-linecap="round"/>
+<path d="M90 26 H106 Q108 52 84 58" fill="none" stroke="#d9a520" stroke-width="6" stroke-linecap="round"/>
+<path d="M30 18 H90 V44 Q90 76 60 80 Q30 76 30 44 Z" fill="url(#vlRpsGold)" stroke="#9a6a10" stroke-width="3" stroke-linejoin="round"/>
+<rect x="52" y="78" width="16" height="14" fill="url(#vlRpsGold)" stroke="#9a6a10" stroke-width="3"/>
+<rect x="36" y="92" width="48" height="13" rx="3" fill="url(#vlRpsGold)" stroke="#9a6a10" stroke-width="3"/>
+<path d="M60 30 l5 10 11 1.5 -8 7.5 2 11 -10 -5.5 -10 5.5 2 -11 -8 -7.5 11 -1.5z" fill="#fff6c8" stroke="#c48a14" stroke-width="1.5" stroke-linejoin="round"/>
+<path d="M39 24 Q37 50 49 66" fill="none" stroke="#ffffff" stroke-opacity="0.55" stroke-width="4" stroke-linecap="round"/>
+</svg>`;
+
+const pickCpuBiased = (player) => {
+  const r = Math.random();
+  const winForPlayer = { rock: "scissors", paper: "rock", scissors: "paper" };
+  const loseForPlayer = { rock: "paper", paper: "scissors", scissors: "rock" };
+  const favor = CONFIG.cpuFavorPlayer;
+  if (r < favor) return winForPlayer[player];
+  if (r < favor + 0.22) return player;
+  return loseForPlayer[player];
+};
+
+function initVlRockPaperScissors() {
+  const existingRoot = document.querySelector(`#${CONFIG.rootId}`);
+  if (existingRoot) {
+    existingRoot.remove();
+  }
+  const existingStyle = document.querySelector(`#${CONFIG.styleId}`);
+  if (existingStyle) {
+    existingStyle.remove();
+  }
+
+  const styleEl = document.createElement("style");
+  styleEl.id = CONFIG.styleId;
+  styleEl.textContent = `
+#${CONFIG.rootId} {
+  font-size: 1em;
+  box-sizing: border-box;
+  position: fixed;
+  inset: 0;
+  z-index: 2147483646;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: max(1em, env(safe-area-inset-top, 0px)) max(1em, env(safe-area-inset-right, 0px)) max(1em, env(safe-area-inset-bottom, 0px)) max(1em, env(safe-area-inset-left, 0px));
+  font-family: system-ui, "Segoe UI", Roboto, sans-serif;
+  pointer-events: auto;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#${CONFIG.rootId} .rps-defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+#${CONFIG.rootId} .rps-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  pointer-events: auto;
+  animation: vlRpsFadeIn 0.35s ease both;
+}
+
+#${CONFIG.rootId} .rps-backdrop[data-state="closing"] {
+  animation: vlRpsFadeOut 0.3s ease forwards;
+}
+
+#${CONFIG.rootId} .rps-panel {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: min(94vw, 52em);
+  max-height: min(92dvh, 100%);
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 1.75em;
+  border-radius: 1.25em;
+  background: linear-gradient(155deg, #1e2436 0%, #0f1219 55%, #151a28 100%);
+  color: #f2f4f8;
+  box-shadow: 0 1em 3em rgba(0, 0, 0, 0.55), 0 0 0 0.06em rgba(255, 255, 255, 0.06);
+  pointer-events: auto;
+}
+
+#${CONFIG.rootId} .rps-panel[data-state="open"] {
+  animation: vlRpsPanelIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+#${CONFIG.rootId} .rps-panel[data-state="closing"] {
+  pointer-events: none;
+  animation: vlRpsPanelOut 0.3s ease forwards;
+}
+
+#${CONFIG.rootId}[data-outcome="win"] .rps-panel {
+  box-shadow: 0 1em 3em rgba(0, 0, 0, 0.55), 0 0 0 0.12em rgba(94, 214, 130, 0.45);
+}
+
+#${CONFIG.rootId}[data-match-over="true"][data-match-winner="you"] .rps-panel {
+  box-shadow: 0 1em 3em rgba(0, 0, 0, 0.55), 0 0 0 0.14em rgba(120, 220, 160, 0.5);
+}
+
+#${CONFIG.rootId} *,
+#${CONFIG.rootId} *::before,
+#${CONFIG.rootId} *::after {
+  box-sizing: border-box;
+}
+
+#${CONFIG.rootId} .rps-close {
+  position: absolute;
+  top: 0.6em;
+  right: 0.6em;
+  z-index: 5;
+  width: 2.3em;
+  height: 2.3em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0.08em solid rgba(255, 255, 255, 0.16);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  color: #dfe6f2;
+  font-size: 1em;
+  line-height: 1;
+  cursor: pointer;
+}
+
+#${CONFIG.rootId} .rps-close svg {
+  width: 0.95em;
+  height: 0.95em;
+}
+
+#${CONFIG.rootId} .rps-close:active {
+  transform: scale(0.92);
+}
+
+#${CONFIG.rootId} .rps-fx {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 4;
+}
+
+#${CONFIG.rootId} .rps-stack {
+  position: relative;
+  min-height: 26em;
+}
+
+#${CONFIG.rootId} .rps-screen {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  width: 100%;
+  opacity: 0;
+  transform: translateY(1em) scale(0.94);
+  pointer-events: none;
+  display: none;
+}
+
+#${CONFIG.rootId}[data-state="how"] .rps-screen-how,
+#${CONFIG.rootId}[data-state="play"] .rps-screen-play,
+#${CONFIG.rootId}[data-state="result"] .rps-screen-result {
+  position: relative;
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+  display: block;
+  animation: vlRpsScreenIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+#${CONFIG.rootId} .rps-title {
+  font-size: clamp(1.45em, 4.2vw, 2.05em);
+  font-weight: 800;
+  text-align: center;
+  margin: 0 0 0.35em 0;
+  padding: 0 1.2em;
+  letter-spacing: 0.02em;
+  line-height: 1.15;
+}
+
+#${CONFIG.rootId} .rps-sub {
+  text-align: center;
+  margin: 0 0 1em 0;
+  font-size: clamp(0.92em, 2.3vw, 1.08em);
+  color: #9aa4b8;
+  line-height: 1.45;
+}
+
+#${CONFIG.rootId} .rps-how-hero {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4em;
+  margin: 0 0 1em 0;
+}
+
+#${CONFIG.rootId} .rps-how-hero-hand {
+  width: 5.6em;
+  height: 3.92em;
+  animation: vlRpsIconBob 1.6s ease-in-out infinite alternate;
+}
+
+#${CONFIG.rootId} .rps-how-hero-hand:nth-child(2) {
+  animation-delay: 0.25s;
+}
+
+#${CONFIG.rootId} .rps-how-hero-hand:nth-child(3) {
+  animation-delay: 0.5s;
+}
+
+#${CONFIG.rootId} .rps-how-heading {
+  font-size: clamp(1em, 2.5vw, 1.12em);
+  font-weight: 800;
+  margin: 0 0 0.45em 0;
+  color: #dfe6f2;
+}
+
+#${CONFIG.rootId} .rps-how-block {
+  margin-bottom: 1.15em;
+}
+
+#${CONFIG.rootId} .rps-how-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 0.35em 0;
+  font-size: clamp(0.88em, 2.1vw, 1.02em);
+  line-height: 1.55;
+  color: #b8c0d0;
+}
+
+#${CONFIG.rootId} .rps-how-list li {
+  margin-bottom: 0.45em;
+  padding-left: 1.2em;
+  position: relative;
+}
+
+#${CONFIG.rootId} .rps-how-list li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.55em;
+  width: 0.4em;
+  height: 0.4em;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #6ec8ff 0%, #4a8fff 100%);
+}
+
+#${CONFIG.rootId} .rps-how-reward {
+  margin: 0;
+  font-size: clamp(0.88em, 2.1vw, 1.02em);
+  line-height: 1.55;
+  color: #c5cddc;
+}
+
+#${CONFIG.rootId} .rps-rules {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1.25em 0;
+  font-size: clamp(0.9em, 2vw, 1em);
+  line-height: 1.55;
+  color: #9aa6b8;
+}
+
+#${CONFIG.rootId} .rps-rules li {
+  margin-bottom: 0.35em;
+  padding-left: 1.15em;
+  position: relative;
+}
+
+#${CONFIG.rootId} .rps-rules li::before {
+  content: "✓";
+  position: absolute;
+  left: 0;
+  top: 0;
+  font-size: 0.85em;
+  color: #5ec88a;
+}
+
+#${CONFIG.rootId} .rps-btn {
+  display: block;
+  width: 100%;
+  padding: 1em 1.25em;
+  font-size: clamp(1.05em, 2.5vw, 1.2em);
+  font-weight: 700;
+  border: none;
+  border-radius: 0.75em;
+  cursor: pointer;
+  background: linear-gradient(180deg, #4d9fff 0%, #2a6fdf 100%);
+  color: #fff;
+  box-shadow: 0 0.35em 1em rgba(45, 120, 230, 0.45), inset 0 0.08em 0 rgba(255, 255, 255, 0.35);
+  font-family: inherit;
+}
+
+#${CONFIG.rootId} .rps-btn--secondary {
+  margin-top: 0.65em;
+  background: linear-gradient(180deg, #4a5568 0%, #2d3544 100%);
+  box-shadow: 0 0.25em 0.85em rgba(0, 0, 0, 0.35);
+}
+
+#${CONFIG.rootId} .rps-btn:active {
+  filter: brightness(0.92);
+  transform: translateY(0.08em);
+}
+
+#${CONFIG.rootId} .rps-scorebar {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 0.65em;
+  margin-bottom: 0.45em;
+  padding: 0.55em 0.65em;
+  border-radius: 0.65em;
+  background: #2a2f3a;
+  border: 0.06em solid rgba(255, 255, 255, 0.08);
+}
+
+#${CONFIG.rootId} .rps-score-meta {
+  text-align: center;
+  font-size: clamp(0.78em, 2vw, 0.88em);
+  color: #8a94a8;
+  margin: 0 0 0.75em 0;
+  font-weight: 600;
+}
+
+#${CONFIG.rootId} .rps-score-name {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+  font-size: clamp(0.9em, 2.4vw, 1.02em);
+  font-weight: 700;
+  color: #f4f6fb;
+  letter-spacing: 0.02em;
+}
+
+#${CONFIG.rootId} .rps-score-name::before {
+  content: "";
+  flex-shrink: 0;
+  width: 0.65em;
+  height: 0.65em;
+  border-radius: 50%;
+  background: #4d9fff;
+}
+
+#${CONFIG.rootId} .rps-score-name--right {
+  justify-content: flex-start;
+  text-align: right;
+  flex-direction: row-reverse;
+}
+
+#${CONFIG.rootId} .rps-score-name--right::before {
+  background: #ff7a59;
+}
+
+#${CONFIG.rootId} .rps-score-box {
+  flex-shrink: 0;
+  min-width: 6em;
+  padding: 0.45em 0.85em;
+  border-radius: 0.5em;
+  text-align: center;
+  font-weight: 800;
+  font-size: clamp(1.05em, 2.8vw, 1.25em);
+  background: #3d4452;
+  color: #fff;
+  align-self: center;
+}
+
+#${CONFIG.rootId} .rps-score-num {
+  display: inline-block;
+  min-width: 0.8em;
+}
+
+#${CONFIG.rootId} .rps-score-num[data-bump="true"] {
+  animation: vlRpsScoreBump 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+#${CONFIG.rootId} .rps-arena {
+  position: relative;
+  border-radius: 1em;
+  min-height: 14em;
+  margin-bottom: 1.15em;
+  overflow: hidden;
+  background: radial-gradient(ellipse at 50% 45%, #5ab0e8 0%, #2a7abf 42%, #143a6e 100%);
+  border: 0.08em solid rgba(0, 0, 0, 0.2);
+}
+
+#${CONFIG.rootId} .rps-arena::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 18%;
+  bottom: 12%;
+  width: 0.14em;
+  transform: translateX(-50%);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.35) 50%, rgba(255, 255, 255, 0) 100%);
+}
+
+#${CONFIG.rootId} .rps-arena::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 32%;
+  background: linear-gradient(180deg, rgba(10, 30, 60, 0) 0%, rgba(10, 30, 60, 0.45) 100%);
+  pointer-events: none;
+}
+
+#${CONFIG.rootId}[data-rps-phase="done"][data-outcome="lose"] .rps-arena {
+  animation: vlRpsArenaShake 0.45s ease;
+}
+
+#${CONFIG.rootId} .rps-arena-inner {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.25em;
+  padding: 3.6em 0.5em 0.75em 0.5em;
+  min-height: 14em;
+}
+
+#${CONFIG.rootId} .rps-hand-side {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  font-size: clamp(0.72em, 3vw, 0.95em);
+}
+
+#${CONFIG.rootId} .rps-hand-tag {
+  margin-top: 0.35em;
+  padding: 0.2em 0.8em;
+  border-radius: 999em;
+  background: rgba(0, 0, 0, 0.28);
+  font-size: 0.95em;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.95);
+  white-space: nowrap;
+}
+
+#${CONFIG.rootId} .rps-hand-stage {
+  position: relative;
+  width: 100%;
+  max-width: 12em;
+  aspect-ratio: 200 / 140;
+}
+
+#${CONFIG.rootId} .rps-hand-glow {
+  position: absolute;
+  inset: -12%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 236, 140, 0.8) 0%, rgba(255, 200, 80, 0.25) 40%, rgba(255, 200, 80, 0) 68%);
+  opacity: 0;
+  transform: scale(0.6);
+  pointer-events: none;
+}
+
+#${CONFIG.rootId}[data-rps-phase="done"][data-outcome="win"] .rps-hand-side--you .rps-hand-glow,
+#${CONFIG.rootId}[data-rps-phase="done"][data-outcome="lose"] .rps-hand-side--cpu .rps-hand-glow {
+  animation: vlRpsGlow 1.2s ease-out forwards;
+}
+
+#${CONFIG.rootId} .rps-hand-flip {
+  position: absolute;
+  inset: 0;
+}
+
+#${CONFIG.rootId} .rps-hand-flip--cpu {
+  transform: scaleX(-1);
+}
+
+#${CONFIG.rootId} .rps-hand-ghost {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  transform-origin: 14% 56%;
+}
+
+#${CONFIG.rootId} .rps-hand-ghost .rps-hand-img {
+  opacity: 0.3;
+}
+
+#${CONFIG.rootId}[data-rps-phase="shake"] .rps-hand-ghost {
+  opacity: 1;
+  animation: vlRpsHandPump ${CONFIG.pumpMs / 1000}s ease-in-out 0.07s 3 both;
+}
+
+#${CONFIG.rootId} .rps-hand-active-wrap {
+  position: absolute;
+  inset: 0;
+}
+
+#${CONFIG.rootId} .rps-hand-active {
+  width: 100%;
+  height: 100%;
+  transform-origin: 14% 56%;
+}
+
+#${CONFIG.rootId} .rps-hand-img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: visible;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+#${CONFIG.rootId}[data-rps-phase="idle"] .rps-hand-active {
+  animation: vlRpsHandIdle 1.1s ease-in-out infinite alternate;
+}
+
+#${CONFIG.rootId}[data-rps-phase="shake"] .rps-hand-active {
+  animation: vlRpsHandPump ${CONFIG.pumpMs / 1000}s ease-in-out 3;
+}
+
+#${CONFIG.rootId}[data-rps-phase="reveal"] .rps-hand-active {
+  animation: vlRpsHandStrike 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+#${CONFIG.rootId}[data-rps-phase="done"][data-outcome="win"] .rps-hand-side--you .rps-hand-active,
+#${CONFIG.rootId}[data-rps-phase="done"][data-outcome="lose"] .rps-hand-side--cpu .rps-hand-active {
+  animation: vlRpsHandWinner 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+#${CONFIG.rootId}[data-rps-phase="done"][data-outcome="win"] .rps-hand-side--cpu .rps-hand-active,
+#${CONFIG.rootId}[data-rps-phase="done"][data-outcome="lose"] .rps-hand-side--you .rps-hand-active {
+  animation: vlRpsHandLoser 0.6s ease forwards;
+}
+
+#${CONFIG.rootId} .rps-count {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0.55em;
+  height: 2.6em;
+  z-index: 2;
+  pointer-events: none;
+}
+
+#${CONFIG.rootId} .rps-count-word,
+#${CONFIG.rootId} .rps-round-banner,
+#${CONFIG.rootId} .rps-prompt {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateX(-50%) scale(0.4);
+}
+
+#${CONFIG.rootId} .rps-count-word {
+  font-size: clamp(1.45em, 5.4vw, 2.1em);
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  color: #fff;
+  text-shadow: 0 0.08em 0 #123a6b, 0 0.2em 0.5em rgba(0, 0, 0, 0.35);
+}
+
+#${CONFIG.rootId} .rps-count-word:nth-child(3) {
+  color: #ffd84a;
+}
+
+#${CONFIG.rootId}[data-rps-phase="shake"] .rps-count-word {
+  animation: vlRpsCountWord ${CONFIG.pumpMs / 1000}s ease-out both;
+}
+
+#${CONFIG.rootId}[data-rps-phase="shake"] .rps-count-word:nth-child(2) {
+  animation-delay: ${CONFIG.pumpMs / 1000}s;
+}
+
+#${CONFIG.rootId}[data-rps-phase="shake"] .rps-count-word:nth-child(3) {
+  animation-delay: ${(CONFIG.pumpMs * 2) / 1000}s;
+  animation-name: vlRpsCountLast;
+  animation-duration: 0.7s;
+}
+
+#${CONFIG.rootId} .rps-prompt {
+  top: 0.35em;
+  padding: 0.35em 1em;
+  border-radius: 999em;
+  background: rgba(10, 30, 60, 0.45);
+  font-size: clamp(0.95em, 3vw, 1.1em);
+  font-weight: 800;
+  color: #fff;
+}
+
+#${CONFIG.rootId}[data-rps-phase="idle"] .rps-prompt {
+  animation: vlRpsPromptIn 0.4s ease 0.2s forwards, vlRpsPromptPulse 1.2s ease-in-out 0.6s infinite alternate;
+}
+
+#${CONFIG.rootId} .rps-round-banner {
+  top: 0.25em;
+  max-width: 94%;
+  padding: 0.45em 1.1em;
+  border-radius: 999em;
+  font-size: clamp(0.9em, 3vw, 1.08em);
+  font-weight: 800;
+  color: #fff;
+  background: #4a5568;
+  box-shadow: 0 0.3em 0.9em rgba(0, 0, 0, 0.3);
+  white-space: normal;
+  text-align: center;
+  width: max-content;
+}
+
+#${CONFIG.rootId}[data-outcome="win"] .rps-round-banner {
+  background: linear-gradient(180deg, #48c97a 0%, #23934f 100%);
+}
+
+#${CONFIG.rootId}[data-outcome="lose"] .rps-round-banner {
+  background: linear-gradient(180deg, #ff6b6b 0%, #c73a3a 100%);
+}
+
+#${CONFIG.rootId} .rps-round-banner[data-state="open"] {
+  animation: vlRpsBannerIn 0.5s cubic-bezier(0.22, 1.4, 0.36, 1) forwards;
+}
+
+#${CONFIG.rootId} .rps-spark {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: 0.55em;
+  height: 0.55em;
+  border-radius: 0.12em;
+  background: var(--c);
+  pointer-events: none;
+  z-index: 3;
+  opacity: 0;
+  animation: vlRpsSpark var(--t) cubic-bezier(0.2, 0.8, 0.3, 1) var(--d) forwards;
+}
+
+#${CONFIG.rootId} .rps-hand-picker {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: stretch;
+  gap: 0.75em;
+}
+
+#${CONFIG.rootId} .rps-hand-choice {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.45em;
+  padding: 0.65em 0.45em 0.75em 0.45em;
+  border-radius: 0.85em;
+  border: 0.1em solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+  color: #f2f4f8;
+  cursor: pointer;
+  min-height: 8.5em;
+  opacity: 0;
+  transform: translateY(1.1em) scale(0.92);
+  font-family: inherit;
+  font-size: 1em;
+}
+
+#${CONFIG.rootId}[data-state="play"] .rps-hand-choice {
+  animation: vlRpsCardEnter 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+#${CONFIG.rootId}[data-state="play"] .rps-hand-choice:nth-child(1) {
+  animation-delay: 0.06s;
+}
+
+#${CONFIG.rootId}[data-state="play"] .rps-hand-choice:nth-child(2) {
+  animation-delay: 0.14s;
+}
+
+#${CONFIG.rootId}[data-state="play"] .rps-hand-choice:nth-child(3) {
+  animation-delay: 0.22s;
+}
+
+#${CONFIG.rootId} .rps-hand-choice[data-locked="true"] {
+  pointer-events: none;
+}
+
+#${CONFIG.rootId} .rps-hand-choice[data-locked="true"]:not([data-picked="true"]) > * {
+  opacity: 0.4;
+}
+
+#${CONFIG.rootId} .rps-hand-choice[data-picked="true"] {
+  border-color: #ffd84a;
+  background: rgba(255, 216, 74, 0.16);
+}
+
+#${CONFIG.rootId}[data-state="play"] .rps-hand-choice[data-picked="true"] {
+  animation: vlRpsCardEnter 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards, vlRpsPicked 0.35s ease;
+}
+
+#${CONFIG.rootId} .rps-hand-choice-visual {
+  width: 6.4em;
+  height: 4.48em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#${CONFIG.rootId}[data-state="play"] .rps-hand-choice-visual {
+  animation: vlRpsIconBob 2.2s ease-in-out infinite alternate;
+}
+
+#${CONFIG.rootId}[data-state="play"] .rps-hand-choice:nth-child(2) .rps-hand-choice-visual {
+  animation-delay: 0.2s;
+}
+
+#${CONFIG.rootId}[data-state="play"] .rps-hand-choice:nth-child(3) .rps-hand-choice-visual {
+  animation-delay: 0.4s;
+}
+
+#${CONFIG.rootId} .rps-hand-choice-label {
+  font-size: clamp(0.82em, 2.2vw, 0.95em);
+  font-weight: 800;
+  text-align: center;
+  line-height: 1.2;
+}
+
+#${CONFIG.rootId} .rps-result-badge {
+  display: none;
+  width: 5.5em;
+  height: 5.5em;
+  margin: 0 auto 0.5em auto;
+}
+
+#${CONFIG.rootId} .rps-result-badge[data-state="open"] {
+  display: block;
+  animation: vlRpsBadgeIn 0.8s cubic-bezier(0.22, 1.4, 0.36, 1) both;
+}
+
+#${CONFIG.rootId} .rps-result-badge svg {
+  width: 100%;
+  height: 100%;
+}
+
+#${CONFIG.rootId} .rps-result-msg {
+  font-size: clamp(1.25em, 3.6vw, 1.75em);
+  font-weight: 800;
+  text-align: center;
+  margin: 0 0 0.35em 0;
+  padding: 0 1.2em;
+  line-height: 1.25;
+}
+
+#${CONFIG.rootId} .rps-result-scoreline {
+  text-align: center;
+  font-size: clamp(1em, 2.6vw, 1.15em);
+  font-weight: 700;
+  color: #a8b4c8;
+  margin: 0 0 1em 0;
+}
+
+#${CONFIG.rootId} .rps-coupon {
+  border-radius: 0.85em;
+  padding: 1em 1.1em;
+  margin: 0 0 1.15em 0;
+  background: linear-gradient(165deg, rgba(80, 180, 120, 0.2) 0%, rgba(30, 50, 40, 0.55) 100%);
+  border: 0.1em solid rgba(120, 220, 160, 0.35);
+  opacity: 0;
+  transform: translateY(0.5em) scale(0.97);
+  pointer-events: none;
+  max-height: 0;
+  overflow: hidden;
+  padding-top: 0;
+  padding-bottom: 0;
+  margin-bottom: 0;
+  border-width: 0;
+}
+
+#${CONFIG.rootId} .rps-coupon[data-state="open"] {
+  animation: vlRpsCouponIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.2s forwards;
+  pointer-events: auto;
+  max-height: none;
+  overflow: visible;
+  padding: 1em 1.1em;
+  margin-bottom: 1.15em;
+  border-width: 0.1em;
+}
+
+#${CONFIG.rootId} .rps-coupon[data-state="close"] {
+  display: none;
+}
+
+#${CONFIG.rootId} .rps-coupon-title {
+  margin: 0 0 0.25em 0;
+  font-size: clamp(1.05em, 2.6vw, 1.2em);
+  font-weight: 800;
+  color: #c8f5d8;
+}
+
+#${CONFIG.rootId} .rps-coupon-body {
+  margin: 0 0 0.85em 0;
+  font-size: clamp(0.88em, 2.2vw, 0.98em);
+  color: #b8d4c8;
+  line-height: 1.45;
+}
+
+#${CONFIG.rootId} .rps-coupon-row {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  gap: 0.65em;
+}
+
+#${CONFIG.rootId} .rps-coupon-code {
+  flex: 1;
+  padding: 0.65em 0.75em;
+  border-radius: 0.55em;
+  background: rgba(0, 0, 0, 0.35);
+  border: 0.08em dashed rgba(255, 255, 255, 0.22);
+  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  font-size: clamp(0.95em, 2.4vw, 1.08em);
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0.06em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  word-break: break-all;
+  user-select: all;
+}
+
+#${CONFIG.rootId} .rps-coupon-copy {
+  flex-shrink: 0;
+  padding: 0.65em 0.9em;
+  font-size: clamp(0.88em, 2.2vw, 0.98em);
+  font-weight: 700;
+  border: none;
+  border-radius: 0.55em;
+  cursor: pointer;
+  background: linear-gradient(180deg, #48c97a 0%, #2a9d5c 100%);
+  color: #fff;
+  white-space: nowrap;
+  box-shadow: 0 0.25em 0.85em rgba(40, 180, 100, 0.35);
+  font-family: inherit;
+}
+
+#${CONFIG.rootId} .rps-coupon-copy:active {
+  filter: brightness(0.93);
+}
+
+#${CONFIG.rootId} .rps-coupon-toast {
+  margin: 0.65em 0 0 0;
+  font-size: clamp(0.82em, 2vw, 0.92em);
+  font-weight: 600;
+  text-align: center;
+  min-height: 1.35em;
+  color: #9ee6b0;
+  opacity: 0;
+  transform: translateY(0.25em);
+}
+
+#${CONFIG.rootId} .rps-coupon-toast[data-state="open"] {
+  animation: vlRpsToastIn 0.35s ease forwards;
+}
+
+#${CONFIG.rootId} .rps-coupon-toast[data-state="close"] {
+  opacity: 0;
+}
+
+#${CONFIG.rootId} .rps-result-caption {
+  margin: 0 0 0.4em 0;
+  text-align: center;
+  font-size: 0.85em;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #8e98ac;
+}
+
+#${CONFIG.rootId} .rps-result-hands {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 1.25em;
+  margin-bottom: 1.1em;
+  padding: 0.75em 0.5em;
+  border-radius: 0.85em;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+#${CONFIG.rootId} .rps-result-hand-col {
+  flex: 1;
+  min-width: 0;
+  max-width: 10em;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35em;
+}
+
+#${CONFIG.rootId} .rps-result-hand-flip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 9em;
+  max-width: 100%;
+  aspect-ratio: 200 / 140;
+  transform: scaleX(-1);
+}
+
+#${CONFIG.rootId} .rps-result-hand-flip .rps-result-hand-svg {
+  width: 100%;
+  height: 100%;
+}
+
+#${CONFIG.rootId} .rps-result-hand-label {
+  font-size: 0.88em;
+  color: #8e98ac;
+  font-weight: 600;
+}
+
+#${CONFIG.rootId} .rps-result-hand-col > .rps-result-hand-svg {
+  width: 9em;
+  max-width: 100%;
+  aspect-ratio: 200 / 140;
+}
+
+#${CONFIG.rootId} .rps-result-hand-svg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#${CONFIG.rootId} .rps-result-hand-name {
+  font-size: 0.95em;
+  font-weight: 800;
+}
+
+#${CONFIG.rootId}[data-outcome="win"] .rps-result-msg {
+  animation: vlRpsWinGlow 0.9s ease forwards;
+}
+
+@keyframes vlRpsFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes vlRpsFadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes vlRpsPanelIn {
+  from {
+    opacity: 0;
+    transform: translateY(1.5em) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes vlRpsPanelOut {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(1em) scale(0.94);
+  }
+}
+
+@keyframes vlRpsCouponIn {
+  from {
+    opacity: 0;
+    transform: translateY(0.5em) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes vlRpsToastIn {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes vlRpsHandIdle {
+  from {
+    transform: translateY(0) rotate(-2deg);
+  }
+  to {
+    transform: translateY(-0.3em) rotate(2deg);
+  }
+}
+
+@keyframes vlRpsHandPump {
+  0% {
+    transform: rotate(0deg);
+  }
+  35% {
+    transform: rotate(-26deg) translateY(-0.4em);
+  }
+  75% {
+    transform: rotate(4deg) translateY(0.15em);
+  }
+  100% {
+    transform: rotate(0deg);
+  }
+}
+
+@keyframes vlRpsHandStrike {
+  0% {
+    transform: rotate(-20deg) scale(0.9);
+    opacity: 0.7;
+  }
+  55% {
+    transform: rotate(3deg) scale(1.08);
+    opacity: 1;
+  }
+  100% {
+    transform: rotate(0deg) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes vlRpsHandWinner {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.14) translateY(-0.3em);
+  }
+  100% {
+    transform: scale(1.06);
+  }
+}
+
+@keyframes vlRpsHandLoser {
+  0% {
+    transform: rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: rotate(12deg) translateY(0.4em) scale(0.92);
+    opacity: 0.55;
+  }
+}
+
+@keyframes vlRpsGlow {
+  0% {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  35% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+  100% {
+    opacity: 0.7;
+    transform: scale(1);
+  }
+}
+
+@keyframes vlRpsCountWord {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) scale(0.4);
+  }
+  30% {
+    opacity: 1;
+    transform: translateX(-50%) scale(1.15);
+  }
+  75% {
+    opacity: 1;
+    transform: translateX(-50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-50%) scale(1.25);
+  }
+}
+
+@keyframes vlRpsCountLast {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) scale(0.4) rotate(-6deg);
+  }
+  30% {
+    opacity: 1;
+    transform: translateX(-50%) scale(1.3) rotate(3deg);
+  }
+  70% {
+    opacity: 1;
+    transform: translateX(-50%) scale(1.1) rotate(0deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-50%) scale(1.6);
+  }
+}
+
+@keyframes vlRpsPromptIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-0.5em) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+}
+
+@keyframes vlRpsPromptPulse {
+  from {
+    opacity: 1;
+    transform: translateX(-50%) scale(1);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) scale(1.06);
+  }
+}
+
+@keyframes vlRpsBannerIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-0.8em) scale(0.6);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+}
+
+@keyframes vlRpsSpark {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, -50%) rotate(0deg) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) rotate(var(--r)) scale(0.4);
+  }
+}
+
+@keyframes vlRpsArenaShake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-0.45em);
+  }
+  40% {
+    transform: translateX(0.4em);
+  }
+  60% {
+    transform: translateX(-0.3em);
+  }
+  80% {
+    transform: translateX(0.2em);
+  }
+}
+
+@keyframes vlRpsScoreBump {
+  0% {
+    transform: scale(1);
+  }
+  35% {
+    transform: scale(1.7);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes vlRpsPicked {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(0.94);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes vlRpsBadgeIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.3) rotate(-20deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+@keyframes vlRpsScreenIn {
+  from {
+    opacity: 0;
+    transform: translateY(1em) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes vlRpsCardEnter {
+  from {
+    opacity: 0;
+    transform: translateY(1.1em) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes vlRpsIconBob {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-0.2em);
+  }
+}
+
+@keyframes vlRpsWinGlow {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.04);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  #${CONFIG.rootId} .rps-hand-choice:hover {
+    border-color: rgba(110, 200, 255, 0.6);
+    background: rgba(110, 200, 255, 0.12);
+  }
+
+  #${CONFIG.rootId} .rps-close:hover {
+    background: rgba(255, 255, 255, 0.16);
+  }
+}
+
+@media (max-width: 767px) {
+  #${CONFIG.rootId} {
+    padding: max(0.6em, env(safe-area-inset-top, 0px)) max(0.6em, env(safe-area-inset-right, 0px)) max(0.6em, env(safe-area-inset-bottom, 0px)) max(0.6em, env(safe-area-inset-left, 0px));
+  }
+
+  #${CONFIG.rootId} .rps-panel {
+    padding: 1.25em 1em;
+    max-width: 100%;
+    max-height: 100%;
+    border-radius: 1em;
+  }
+
+  #${CONFIG.rootId} .rps-stack {
+    min-height: 22em;
+  }
+
+  #${CONFIG.rootId} .rps-screen-play .rps-sub {
+    display: none;
+  }
+
+  #${CONFIG.rootId} .rps-how-hero-hand {
+    width: 4.6em;
+    height: 3.22em;
+  }
+
+  #${CONFIG.rootId} .rps-arena {
+    min-height: 12em;
+  }
+
+  #${CONFIG.rootId} .rps-arena-inner {
+    min-height: 12em;
+    padding: 3.3em 0.35em 0.6em 0.35em;
+  }
+
+  #${CONFIG.rootId} .rps-hand-choice {
+    min-height: 7.5em;
+    padding: 0.55em 0.3em 0.6em 0.3em;
+  }
+
+  #${CONFIG.rootId} .rps-hand-choice-visual {
+    width: 5.2em;
+    height: 3.64em;
+  }
+
+  #${CONFIG.rootId} .rps-scorebar {
+    gap: 0.4em;
+    padding: 0.5em 0.55em;
+  }
+
+  #${CONFIG.rootId} .rps-score-box {
+    min-width: 4.6em;
+    padding: 0.35em 0.6em;
+  }
+
+  #${CONFIG.rootId} .rps-result-hand-col > .rps-result-hand-svg,
+  #${CONFIG.rootId} .rps-result-hand-flip {
+    width: 7.5em;
+  }
+
+  #${CONFIG.rootId} .rps-coupon-row {
+    flex-direction: column;
+  }
+
+  #${CONFIG.rootId} .rps-coupon-copy {
+    width: 100%;
+    padding: 0.85em 1em;
+  }
+}
+
+@media (min-width: 768px) {
+  #${CONFIG.rootId} .rps-panel {
+    padding: 2.25em 2.5em;
+  }
+
+  #${CONFIG.rootId} .rps-hand-picker {
+    gap: 1em;
+  }
+
+  #${CONFIG.rootId} .rps-hand-choice {
+    min-height: 9.5em;
+  }
+}
+
+@media (min-width: 1024px) {
+  #${CONFIG.rootId} .rps-arena-inner {
+    padding: 3.8em 1.35em 0.75em 1.35em;
+    min-height: 15em;
+  }
+
+  #${CONFIG.rootId} .rps-hand-side {
+    font-size: 1em;
+  }
+}
+
+@media (max-height: 700px) and (min-width: 768px) {
+  #${CONFIG.rootId} .rps-panel {
+    padding: 1.4em 2em;
+  }
+
+  #${CONFIG.rootId} .rps-screen-play .rps-sub {
+    display: none;
+  }
+
+  #${CONFIG.rootId} .rps-hand-side {
+    font-size: 0.85em;
+  }
+}
+
+@media (pointer: coarse) {
+  #${CONFIG.rootId} .rps-btn,
+  #${CONFIG.rootId} .rps-hand-choice,
+  #${CONFIG.rootId} .rps-coupon-copy {
+    min-height: 2.85em;
+  }
+
+  #${CONFIG.rootId} .rps-hand-choice {
+    touch-action: manipulation;
+  }
+
+  #${CONFIG.rootId} .rps-close {
+    width: 2.6em;
+    height: 2.6em;
+  }
+}
+`;
+  document.head.appendChild(styleEl);
+
+  let scoreYou = 0;
+  let scoreCpu = 0;
+  const winTo = CONFIG.matchTarget;
+  const timers = new Set();
+
+  const later = (fn, ms) => {
+    const id = window.setTimeout(() => {
+      timers.delete(id);
+      fn();
+    }, ms);
+    timers.add(id);
+  };
+
+  const root = document.createElement("div");
+  root.id = CONFIG.rootId;
+  root.dataset.state = "how";
+  root.dataset.outcome = "";
+  root.dataset.rpsPhase = "idle";
+  root.dataset.matchOver = "false";
+  root.dataset.matchWinner = "";
+
+  const scoreHintText = CONFIG.scoreHint.replace("{n}", String(winTo));
+  const closeIcon = `<svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 4 L16 16 M16 4 L4 16" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>`;
+
+  root.innerHTML = `
+<svg class="rps-defs" aria-hidden="true" focusable="false">
+  <defs>
+    <linearGradient id="vlRpsSkin" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffe3c8"/>
+      <stop offset="0.5" stop-color="#f6c29a"/>
+      <stop offset="1" stop-color="#dc9a6c"/>
+    </linearGradient>
+    <linearGradient id="vlRpsSkinFinger" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffead6"/>
+      <stop offset="0.55" stop-color="#f8c8a2"/>
+      <stop offset="1" stop-color="#e0a074"/>
+    </linearGradient>
+    <linearGradient id="vlRpsCuff-you" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#6fb4ff"/>
+      <stop offset="1" stop-color="#1f5fc9"/>
+    </linearGradient>
+    <linearGradient id="vlRpsCuff-cpu" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ff9a7a"/>
+      <stop offset="1" stop-color="#c93a2a"/>
+    </linearGradient>
+    <linearGradient id="vlRpsGold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fff2a8"/>
+      <stop offset="0.45" stop-color="#ffcf3a"/>
+      <stop offset="1" stop-color="#d48a08"/>
+    </linearGradient>
+  </defs>
+</svg>
+<div class="rps-backdrop" aria-hidden="true" data-state="open"></div>
+<div class="rps-panel" role="dialog" aria-modal="true" aria-label="${CONFIG.title}" data-state="open">
+<button type="button" class="rps-close" id="rps-btn-close" aria-label="${CONFIG.closeLabel}">${closeIcon}</button>
+<div class="rps-fx" id="rps-fx" aria-hidden="true"></div>
+<div class="rps-stack">
+  <div class="rps-screen rps-screen-how" data-screen="how">
+    <h2 class="rps-title">${CONFIG.title}</h2>
+    <p class="rps-sub">${CONFIG.subtitle}</p>
+    <div class="rps-how-hero" aria-hidden="true">
+      <span class="rps-how-hero-hand">${handImgHtml("rock", "you")}</span>
+      <span class="rps-how-hero-hand">${handImgHtml("paper", "you")}</span>
+      <span class="rps-how-hero-hand">${handImgHtml("scissors", "you")}</span>
+    </div>
+    <div class="rps-how-block">
+      <h3 class="rps-how-heading">${CONFIG.howHeadingPlay}</h3>
+      <ul class="rps-how-list">
+        <li>${CONFIG.howStep1}</li>
+        <li>${CONFIG.howStep2}</li>
+        <li>${CONFIG.howStep3}</li>
+      </ul>
+    </div>
+    <div class="rps-how-block">
+      <h3 class="rps-how-heading">${CONFIG.howHeadingReward}</h3>
+      <p class="rps-how-reward">${CONFIG.howReward}</p>
+    </div>
+    <ul class="rps-rules">
+      <li>${CONFIG.ruleLine1}</li>
+      <li>${CONFIG.ruleLine2}</li>
+      <li>${CONFIG.ruleLine3}</li>
+    </ul>
+    <button type="button" class="rps-btn" id="rps-btn-play">${CONFIG.playCta}</button>
+  </div>
+  <div class="rps-screen rps-screen-play" data-screen="play">
+    <h2 class="rps-title">${CONFIG.title}</h2>
+    <p class="rps-sub">${CONFIG.subtitle}</p>
+    <div class="rps-scorebar">
+      <span class="rps-score-name rps-score-name--left">${CONFIG.labelYou}</span>
+      <span class="rps-score-box"><span class="rps-score-num" id="rps-score-you">0</span><span aria-hidden="true"> — </span><span class="rps-score-num" id="rps-score-cpu">0</span></span>
+      <span class="rps-score-name rps-score-name--right">${CONFIG.labelComputer}</span>
+    </div>
+    <p class="rps-score-meta" id="rps-play-hint">${scoreHintText}</p>
+    <div class="rps-arena" id="rps-arena">
+      <div class="rps-count" aria-hidden="true">
+        <span class="rps-count-word">${CONFIG.countWords[0]}</span>
+        <span class="rps-count-word">${CONFIG.countWords[1]}</span>
+        <span class="rps-count-word">${CONFIG.countWords[2]}</span>
+        <span class="rps-prompt">${CONFIG.promptPick}</span>
+      </div>
+      <div class="rps-count">
+        <span class="rps-round-banner" id="rps-round-banner" data-state="close" aria-live="polite"></span>
+      </div>
+      <div class="rps-arena-inner">
+        <div class="rps-hand-side rps-hand-side--you">
+          <div class="rps-hand-stage">
+            <div class="rps-hand-glow" aria-hidden="true"></div>
+            <div class="rps-hand-ghost" id="rps-ghost-you" aria-hidden="true"></div>
+            <div class="rps-hand-active-wrap">
+              <div class="rps-hand-active" id="rps-hand-you-active"></div>
+            </div>
+          </div>
+          <span class="rps-hand-tag">${CONFIG.labelYou}</span>
+        </div>
+        <div class="rps-hand-side rps-hand-side--cpu">
+          <div class="rps-hand-stage">
+            <div class="rps-hand-glow" aria-hidden="true"></div>
+            <div class="rps-hand-flip rps-hand-flip--cpu">
+              <div class="rps-hand-ghost" id="rps-ghost-cpu" aria-hidden="true"></div>
+              <div class="rps-hand-active-wrap">
+                <div class="rps-hand-active" id="rps-hand-cpu-active"></div>
+              </div>
+            </div>
+          </div>
+          <span class="rps-hand-tag">${CONFIG.labelComputer}</span>
+        </div>
+      </div>
+    </div>
+    <div class="rps-hand-picker">
+      <button type="button" class="rps-hand-choice" data-choice="rock"><span class="rps-hand-choice-visual" id="rps-pick-vis-rock"></span><span class="rps-hand-choice-label">${CONFIG.choiceRock}</span></button>
+      <button type="button" class="rps-hand-choice" data-choice="paper"><span class="rps-hand-choice-visual" id="rps-pick-vis-paper"></span><span class="rps-hand-choice-label">${CONFIG.choicePaper}</span></button>
+      <button type="button" class="rps-hand-choice" data-choice="scissors"><span class="rps-hand-choice-visual" id="rps-pick-vis-scissors"></span><span class="rps-hand-choice-label">${CONFIG.choiceScissors}</span></button>
+    </div>
+  </div>
+  <div class="rps-screen rps-screen-result" data-screen="result">
+    <div class="rps-result-badge" id="rps-result-badge" data-state="close">${RPS_TROPHY_SVG}</div>
+    <p class="rps-result-msg" id="rps-result-msg"></p>
+    <p class="rps-result-scoreline" id="rps-result-scoreline"></p>
+    <div class="rps-coupon" id="rps-coupon" data-state="close">
+      <p class="rps-coupon-title">${CONFIG.couponTitle}</p>
+      <p class="rps-coupon-body">${CONFIG.couponBody}</p>
+      <div class="rps-coupon-row">
+        <span class="rps-coupon-code" id="rps-coupon-code" aria-live="polite"></span>
+        <button type="button" class="rps-coupon-copy" id="rps-coupon-copy">${CONFIG.copyCouponCta}</button>
+      </div>
+      <p class="rps-coupon-toast" id="rps-coupon-toast" data-state="close"></p>
+    </div>
+    <p class="rps-result-caption">${CONFIG.lastRoundLabel}</p>
+    <div class="rps-result-hands">
+      <div class="rps-result-hand-col">
+        <span class="rps-result-hand-label">${CONFIG.labelYou}</span>
+        <span class="rps-result-hand-svg" id="rps-result-you-hand"></span>
+        <span class="rps-result-hand-name" id="rps-result-you-name"></span>
+      </div>
+      <div class="rps-result-hand-col">
+        <span class="rps-result-hand-label">${CONFIG.labelComputer}</span>
+        <span class="rps-result-hand-flip">
+          <span class="rps-result-hand-svg" id="rps-result-cpu-hand"></span>
+        </span>
+        <span class="rps-result-hand-name" id="rps-result-cpu-name"></span>
+      </div>
+    </div>
+    <button type="button" class="rps-btn" id="rps-btn-again">${CONFIG.newMatchCta}</button>
+    <button type="button" class="rps-btn rps-btn--secondary" id="rps-btn-exit">${CONFIG.closeLabel}</button>
+  </div>
+</div>
+</div>
+`;
+
+  let audioCtx = null;
+  let noiseBuf = null;
+
+  const SFX = {
+    tap: [[660, 0.08, "triangle", 0.12, 880, 0]],
+    pump: [[150, 0.16, "sine", 0.4, 70, 0], [2200, 0.05, "noise", 0.08, 0, 0]],
+    clash: [[2600, 0.18, "noise", 0.22, 0, 0], [320, 0.14, "triangle", 0.2, 140, 0], [980, 0.08, "square", 0.05, 620, 0]],
+    win: [[523, 0.12, "triangle", 0.2, 0, 0], [659, 0.12, "triangle", 0.2, 0, 0.09], [784, 0.24, "triangle", 0.22, 0, 0.18]],
+    lose: [[392, 0.2, "sawtooth", 0.08, 330, 0], [294, 0.32, "sawtooth", 0.08, 220, 0.17]],
+    draw: [[440, 0.1, "sine", 0.16, 0, 0], [440, 0.14, "sine", 0.16, 0, 0.13]],
+    matchWin: [[523, 0.14, "triangle", 0.2, 0, 0], [659, 0.14, "triangle", 0.2, 0, 0.12], [784, 0.14, "triangle", 0.2, 0, 0.24], [1047, 0.45, "triangle", 0.24, 0, 0.36], [1568, 0.4, "sine", 0.06, 0, 0.36]],
+    matchLose: [[330, 0.25, "triangle", 0.16, 300, 0], [262, 0.25, "triangle", 0.16, 240, 0.22], [196, 0.5, "triangle", 0.16, 160, 0.44]],
+    copy: [[880, 0.07, "sine", 0.16, 0, 0], [1320, 0.12, "sine", 0.16, 0, 0.07]]
+  };
+
+  const getAudio = () => {
+    if (!audioCtx) {
+      try {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return null;
+        audioCtx = new AC();
+      } catch (e) {
+        return null;
+      }
+    }
+    if (audioCtx.state === "suspended") {
+      audioCtx.resume().catch(() => {});
+    }
+    return audioCtx;
+  };
+
+  const getNoise = (ac) => {
+    if (noiseBuf) return noiseBuf;
+    noiseBuf = ac.createBuffer(1, Math.floor(ac.sampleRate * 0.4), ac.sampleRate);
+    const data = noiseBuf.getChannelData(0);
+    for (let i = 0; i < data.length; i += 1) {
+      data[i] = Math.random() * 2 - 1;
+    }
+    return noiseBuf;
+  };
+
+  const playSfx = (name) => {
+    const ac = getAudio();
+    if (!ac || !SFX[name]) return;
+    try {
+      const now = ac.currentTime;
+      SFX[name].forEach(([freq, dur, wave, vol, to, at]) => {
+        const t = now + at;
+        const gain = ac.createGain();
+        gain.gain.setValueAtTime(0.0001, t);
+        gain.gain.exponentialRampToValueAtTime(vol, t + 0.012);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+        gain.connect(ac.destination);
+        if (wave === "noise") {
+          const src = ac.createBufferSource();
+          const filter = ac.createBiquadFilter();
+          src.buffer = getNoise(ac);
+          filter.type = "bandpass";
+          filter.frequency.setValueAtTime(freq, t);
+          src.connect(filter);
+          filter.connect(gain);
+          src.start(t);
+          src.stop(t + dur + 0.02);
+          return;
+        }
+        const osc = ac.createOscillator();
+        osc.type = wave;
+        osc.frequency.setValueAtTime(freq, t);
+        if (to) osc.frequency.exponentialRampToValueAtTime(to, t + dur);
+        osc.connect(gain);
+        osc.start(t);
+        osc.stop(t + dur + 0.02);
+      });
+    } catch (e) {}
+  };
+
+  const labelForChoice = (c) => {
+    if (c === "rock") return CONFIG.choiceRock;
+    if (c === "paper") return CONFIG.choicePaper;
+    return CONFIG.choiceScissors;
+  };
+
+  const decide = (player, cpu) => {
+    if (player === cpu) return "draw";
+    if (
+      (player === "rock" && cpu === "scissors") ||
+      (player === "paper" && cpu === "rock") ||
+      (player === "scissors" && cpu === "paper")
+    ) {
+      return "win";
+    }
+    return "lose";
+  };
+
+  const panel = root.querySelector(".rps-panel");
+  const backdrop = root.querySelector(".rps-backdrop");
+  const fxLayer = root.querySelector("#rps-fx");
+  const arena = root.querySelector("#rps-arena");
+  const roundBanner = root.querySelector("#rps-round-banner");
+  const handYouActive = root.querySelector("#rps-hand-you-active");
+  const handCpuActive = root.querySelector("#rps-hand-cpu-active");
+  const ghostYou = root.querySelector("#rps-ghost-you");
+  const ghostCpu = root.querySelector("#rps-ghost-cpu");
+  const scoreYouEl = root.querySelector("#rps-score-you");
+  const scoreCpuEl = root.querySelector("#rps-score-cpu");
+  const couponEl = root.querySelector("#rps-coupon");
+  const couponCodeEl = root.querySelector("#rps-coupon-code");
+  const couponCopyBtn = root.querySelector("#rps-coupon-copy");
+  const couponToast = root.querySelector("#rps-coupon-toast");
+  const resultScoreline = root.querySelector("#rps-result-scoreline");
+  const resultBadge = root.querySelector("#rps-result-badge");
+
+  const setBattleHands = (you, cpu) => {
+    handYouActive.innerHTML = handImgHtml(you, "you");
+    handCpuActive.innerHTML = handImgHtml(cpu, "cpu");
+    ghostYou.innerHTML = handImgHtml(you, "you");
+    ghostCpu.innerHTML = handImgHtml(cpu, "cpu");
+  };
+
+  const syncScoreboard = () => {
+    scoreYouEl.textContent = String(scoreYou);
+    scoreCpuEl.textContent = String(scoreCpu);
+  };
+
+  const bumpScore = (el) => {
+    el.removeAttribute("data-bump");
+    void el.offsetWidth;
+    el.dataset.bump = "true";
+    el.addEventListener("animationend", () => el.removeAttribute("data-bump"), { once: true });
+  };
+
+  const burst = (layer, xPct, yPct, count, spread, fall) => {
+    const colors = ["#ffd84a", "#5ee08a", "#4d9fff", "#ff6b8b", "#ffffff", "#ff9a4d"];
+    for (let i = 0; i < count; i += 1) {
+      const s = document.createElement("span");
+      const a = Math.random() * Math.PI * 2;
+      const d = spread * (0.45 + Math.random() * 0.55);
+      s.className = "rps-spark";
+      s.style.setProperty("--x", `${xPct}%`);
+      s.style.setProperty("--y", `${yPct}%`);
+      s.style.setProperty("--dx", `${(Math.cos(a) * d).toFixed(2)}em`);
+      s.style.setProperty("--dy", `${(Math.sin(a) * d + fall).toFixed(2)}em`);
+      s.style.setProperty("--r", `${Math.round(Math.random() * 720 - 360)}deg`);
+      s.style.setProperty("--c", colors[i % colors.length]);
+      s.style.setProperty("--t", `${(0.8 + Math.random() * 0.6).toFixed(2)}s`);
+      s.style.setProperty("--d", `${(Math.random() * 0.12).toFixed(2)}s`);
+      s.addEventListener("animationend", () => s.remove(), { once: true });
+      layer.appendChild(s);
+    }
+  };
+
+  const resetMatch = () => {
+    scoreYou = 0;
+    scoreCpu = 0;
+    syncScoreboard();
+    root.dataset.matchOver = "false";
+    root.dataset.matchWinner = "";
+    couponEl.dataset.state = "close";
+    couponToast.dataset.state = "close";
+    couponToast.textContent = "";
+    resultBadge.dataset.state = "close";
+  };
+
+  const playBtn = root.querySelector("#rps-btn-play");
+  const againBtn = root.querySelector("#rps-btn-again");
+  const exitBtn = root.querySelector("#rps-btn-exit");
+  const closeBtn = root.querySelector("#rps-btn-close");
+  const resultMsg = root.querySelector("#rps-result-msg");
+  const resultYouHand = root.querySelector("#rps-result-you-hand");
+  const resultCpuHand = root.querySelector("#rps-result-cpu-hand");
+  const resultYouName = root.querySelector("#rps-result-you-name");
+  const resultCpuName = root.querySelector("#rps-result-cpu-name");
+  const choiceBtns = root.querySelectorAll("[data-choice]");
+
+  root.querySelector("#rps-pick-vis-rock").innerHTML = handImgHtml("rock", "you");
+  root.querySelector("#rps-pick-vis-paper").innerHTML = handImgHtml("paper", "you");
+  root.querySelector("#rps-pick-vis-scissors").innerHTML = handImgHtml("scissors", "you");
+
+  setBattleHands("rock", "rock");
+  syncScoreboard();
+
+  const resetPickerLock = () => {
+    choiceBtns.forEach((b) => {
+      b.removeAttribute("data-locked");
+      b.removeAttribute("data-picked");
+    });
+  };
+
+  const startRound = () => {
+    root.dataset.outcome = "";
+    root.dataset.rpsPhase = "idle";
+    roundBanner.dataset.state = "close";
+    roundBanner.textContent = "";
+    setBattleHands("rock", "rock");
+    resetPickerLock();
+  };
+
+  const runRound = (player, cpu) => {
+    resultYouHand.innerHTML = handImgHtml(player, "you");
+    resultCpuHand.innerHTML = handImgHtml(cpu, "cpu");
+    resultYouName.textContent = labelForChoice(player);
+    resultCpuName.textContent = labelForChoice(cpu);
+    resultScoreline.textContent = `${CONFIG.labelYou} ${scoreYou} — ${scoreCpu} ${CONFIG.labelComputer}`;
+    couponToast.dataset.state = "close";
+    couponToast.textContent = "";
+    root.dataset.matchOver = "true";
+    if (scoreYou >= winTo) {
+      root.dataset.matchWinner = "you";
+      resultMsg.textContent = CONFIG.msgMatchWin;
+      couponCodeEl.textContent = CONFIG.couponCode;
+      couponEl.dataset.state = "open";
+      resultBadge.dataset.state = "open";
+      root.dataset.outcome = "win";
+      playSfx("matchWin");
+      burst(fxLayer, 50, 18, 40, 14, 6);
+      later(() => burst(fxLayer, 25, 30, 20, 10, 8), 350);
+      later(() => burst(fxLayer, 75, 30, 20, 10, 8), 600);
+    } else {
+      root.dataset.matchWinner = "cpu";
+      resultMsg.textContent = CONFIG.msgMatchLose;
+      couponEl.dataset.state = "close";
+      resultBadge.dataset.state = "close";
+      root.dataset.outcome = "lose";
+      playSfx("matchLose");
+    }
+    root.dataset.state = "result";
+    root.dataset.rpsPhase = "idle";
+    panel.scrollTop = 0;
+    resetPickerLock();
+  };
+
+  const finishRound = (player, cpu, outcome) => {
+    if (outcome === "win") {
+      scoreYou += 1;
+      bumpScore(scoreYouEl);
+    }
+    if (outcome === "lose") {
+      scoreCpu += 1;
+      bumpScore(scoreCpuEl);
+    }
+    syncScoreboard();
+    root.dataset.outcome = outcome;
+    root.dataset.rpsPhase = "done";
+    if (outcome === "win") roundBanner.textContent = CONFIG.msgRoundWin;
+    else if (outcome === "lose") roundBanner.textContent = CONFIG.msgRoundLose;
+    else roundBanner.textContent = CONFIG.msgRoundDraw;
+    roundBanner.dataset.state = "open";
+    playSfx(outcome);
+    if (outcome === "win") burst(arena, 28, 62, 22, 6, 1);
+    const over = scoreYou >= winTo || scoreCpu >= winTo;
+    if (over) {
+      later(() => runRound(player, cpu), 1600);
+    } else {
+      later(startRound, 1500);
+    }
+  };
+
+  const copyCoupon = () => {
+    const code = CONFIG.couponCode;
+    const doneOk = () => {
+      couponToast.textContent = CONFIG.copyCouponOk;
+      couponToast.dataset.state = "open";
+      playSfx("copy");
+    };
+    const doneFail = () => {
+      couponToast.textContent = CONFIG.copyCouponFail;
+      couponToast.dataset.state = "open";
+    };
+    const legacyCopy = () => {
+      const ta = document.createElement("textarea");
+      ta.value = code;
+      ta.setAttribute("readonly", "");
+      ta.style.position = "fixed";
+      ta.style.left = "-9999px";
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        if (document.execCommand("copy")) doneOk();
+        else doneFail();
+      } catch (e) {
+        doneFail();
+      }
+      document.body.removeChild(ta);
+    };
+    couponToast.dataset.state = "close";
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(code).then(doneOk).catch(legacyCopy);
+    } else {
+      legacyCopy();
+    }
+  };
+
+  const onKey = (e) => {
+    if (e.key === "Escape") closeGame();
+  };
+
+  const closeGame = () => {
+    if (panel.dataset.state === "closing") return;
+    timers.forEach((id) => window.clearTimeout(id));
+    timers.clear();
+    document.removeEventListener("keydown", onKey);
+    panel.dataset.state = "closing";
+    backdrop.dataset.state = "closing";
+    const onPanelEnd = (e) => {
+      if (e.target !== panel) return;
+      panel.removeEventListener("animationend", onPanelEnd);
+      root.remove();
+      styleEl.remove();
+      if (audioCtx) audioCtx.close().catch(() => {});
+    };
+    panel.addEventListener("animationend", onPanelEnd);
+  };
+
+  playBtn.addEventListener(
+    "click",
+    () => {
+      try {
+        const _vlc = "<%VLSendClickFunc%>";
+        if (_vlc.indexOf("<%") === -1) {
+          new Function(_vlc)();
+        }
+      } catch (e) {}
+      playSfx("tap");
+      resetMatch();
+      root.dataset.state = "play";
+      startRound();
+    },
+    { once: true }
+  );
+
+  couponCopyBtn.addEventListener("click", () => {
+    copyCoupon();
+  });
+
+  choiceBtns.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      if (btn.getAttribute("data-locked") === "true") return;
+      choiceBtns.forEach((b) => {
+        b.setAttribute("data-locked", "true");
+      });
+      btn.setAttribute("data-picked", "true");
+      const player = btn.getAttribute("data-choice");
+      const cpu = pickCpuBiased(player);
+      const outcome = decide(player, cpu);
+      playSfx("tap");
+      root.dataset.rpsPhase = "shake";
+      for (let i = 1; i < CONFIG.countWords.length; i += 1) {
+        later(() => playSfx("pump"), i * CONFIG.pumpMs - CONFIG.pumpMs * 0.25);
+      }
+      later(() => {
+        setBattleHands(player, cpu);
+        root.dataset.rpsPhase = "reveal";
+        playSfx("clash");
+        later(() => finishRound(player, cpu, outcome), 550);
+      }, CONFIG.pumpMs * CONFIG.countWords.length);
+    });
+  });
+
+  againBtn.addEventListener("click", () => {
+    playSfx("tap");
+    root.dataset.outcome = "";
+    resetMatch();
+    root.dataset.state = "play";
+    panel.scrollTop = 0;
+    startRound();
+  });
+
+  exitBtn.addEventListener("click", closeGame);
+  closeBtn.addEventListener("click", closeGame);
+  backdrop.addEventListener("click", closeGame);
+  document.addEventListener("keydown", onKey);
+
+  document.body.appendChild(root);
+  try {
+    const _vli = "<%VLSendImpressionFunc%>";
+    if (_vli.indexOf("<%") === -1) {
+      new Function(_vli)();
+    }
+  } catch (e) {}
+}
+
+initVlRockPaperScissors();
+  </script>
+</body>
+
+</html>

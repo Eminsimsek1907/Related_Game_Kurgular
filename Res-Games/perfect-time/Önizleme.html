@@ -1,0 +1,4476 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Perfect Time</title>
+</head>
+
+<body>
+  <script>
+function initVLRefleksGame() {
+
+    if (document.querySelector("#vlRefleksGame")) return;
+
+    const prevHtmlOverflow = document.documentElement.style.overflow;
+
+    const prevBodyOverflow = document.body.style.overflow;
+
+    document.documentElement.style.overflow = "hidden";
+
+    document.body.style.overflow = "hidden";
+
+    const CONFIG = {
+
+        ballDuration: 2400,
+
+        speedUpPerRound: 0.84,
+
+        targetNorm: 0.16,
+
+        perfectHalfNorm: 0.04,
+
+        goodHalfNorm: 0.11,
+
+        meterRange: 0.4,
+
+        points: {
+
+            perfect: 100,
+
+            good: 50,
+
+            miss: 0
+
+        },
+
+        countdownDuration: 900,
+
+        maxRounds: 3,
+
+        betweenRoundMs: 1150
+
+    };
+
+
+
+    const styleEl = document.createElement("style");
+
+    styleEl.id = "vlRefleksGameStyle";
+
+    styleEl.textContent = `
+
+#vlRefleksGame {
+
+    position: fixed;
+
+    inset: 0;
+
+    z-index: 999999;
+
+    font-size: clamp(14px, 3.5vw, 18px);
+
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+    overflow: hidden;
+
+    box-sizing: border-box;
+
+    overscroll-behavior: none;
+
+}
+
+#vlRefleksGame *,
+
+#vlRefleksGame *::before,
+
+#vlRefleksGame *::after {
+
+    box-sizing: border-box;
+
+}
+
+#vlRefleksGame[data-state="open"] {
+
+    animation: vlRgOverlayIn 0.4s ease forwards;
+
+}
+
+#vlRefleksGame[data-state="closing"] {
+
+    animation: vlRgOverlayOut 0.35s ease forwards;
+
+    pointer-events: none;
+
+}
+
+@keyframes vlRgOverlayIn {
+
+    from {
+
+        opacity: 0;
+
+    }
+
+    to {
+
+        opacity: 1;
+
+    }
+
+}
+
+@keyframes vlRgOverlayOut {
+
+    to {
+
+        opacity: 0;
+
+    }
+
+}
+
+#vlRefleksGame .vl-rg-screen {
+
+    position: absolute;
+
+    inset: 0;
+
+    opacity: 0;
+
+    pointer-events: none;
+
+    transform: translate3d(0.6em, 0, 0);
+
+    transition: none;
+
+    will-change: opacity, transform;
+
+}
+
+#vlRefleksGame[data-screen="welcome"] .vl-rg-screen-welcome,
+
+#vlRefleksGame[data-screen="countdown"] .vl-rg-screen-countdown,
+
+#vlRefleksGame[data-screen="game"] .vl-rg-screen-game,
+
+#vlRefleksGame[data-screen="result"] .vl-rg-screen-result {
+
+    animation: vlRgScreenEnter 0.4s ease forwards;
+
+    pointer-events: auto;
+
+}
+
+@keyframes vlRgScreenEnter {
+
+    from {
+
+        opacity: 0;
+
+        transform: translate3d(0.45em, 0, 0);
+
+    }
+
+    to {
+
+        opacity: 1;
+
+        transform: translate3d(0, 0, 0);
+
+    }
+
+}
+
+#vlRefleksGame[data-screen="welcome"] .vl-rg-screen:not(.vl-rg-screen-welcome),
+
+#vlRefleksGame[data-screen="countdown"] .vl-rg-screen:not(.vl-rg-screen-countdown),
+
+#vlRefleksGame[data-screen="game"] .vl-rg-screen:not(.vl-rg-screen-game),
+
+#vlRefleksGame[data-screen="result"] .vl-rg-screen:not(.vl-rg-screen-result) {
+
+    animation: vlRgScreenLeave 0.3s ease forwards;
+
+}
+
+@keyframes vlRgScreenLeave {
+
+    to {
+
+        opacity: 0;
+
+        transform: translate3d(-0.4em, 0, 0);
+
+    }
+
+}
+
+.vl-rg-welcome-inner {
+
+    min-height: 100%;
+
+    padding: 1.2em;
+
+    padding-bottom: max(1.2em, env(safe-area-inset-bottom, 0px));
+
+    background: radial-gradient(ellipse 70% 40% at 15% 0%, rgba(255, 233, 160, 0.16), transparent 70%), radial-gradient(ellipse 70% 40% at 85% 0%, rgba(255, 233, 160, 0.16), transparent 70%), radial-gradient(ellipse 120% 60% at 50% 110%, rgba(31, 122, 58, 0.45), transparent 70%), linear-gradient(165deg, #0d1528 0%, #070b1f 50%, #160f33 100%);
+
+    color: #f0f4ff;
+
+    display: flex;
+
+    flex-direction: column;
+
+    align-items: center;
+
+    justify-content: flex-start;
+
+    overflow-y: auto;
+
+    -webkit-overflow-scrolling: touch;
+
+}
+
+.vl-rg-hero {
+
+    width: 7.5em;
+
+    height: 5em;
+
+    margin-top: 0.6em;
+
+    flex-shrink: 0;
+
+    filter: drop-shadow(0 0.4em 0.8em rgba(0, 0, 0, 0.5));
+
+    animation: vlRgHeroFloat 2.6s ease-in-out infinite;
+
+}
+
+@keyframes vlRgHeroFloat {
+
+    0%,
+
+    100% {
+
+        transform: translate3d(0, 0, 0) rotate(-2deg);
+
+    }
+
+    50% {
+
+        transform: translate3d(0, -0.35em, 0) rotate(2deg);
+
+    }
+
+}
+
+.vl-rg-x {
+
+    appearance: none;
+
+    position: absolute;
+
+    top: max(0.7em, env(safe-area-inset-top, 0px));
+
+    right: 0.7em;
+
+    z-index: 50;
+
+    width: 2.4em;
+
+    height: 2.4em;
+
+    padding: 0;
+
+    border-radius: 50%;
+
+    border: 0.1em solid rgba(255, 255, 255, 0.25);
+
+    background: rgba(0, 0, 0, 0.4);
+
+    color: #fff;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    cursor: pointer;
+
+    touch-action: manipulation;
+
+    transition: transform 0.15s ease, opacity 0.15s ease;
+
+}
+
+.vl-rg-x:active {
+
+    transform: scale(0.92);
+
+}
+
+.vl-rg-x svg {
+
+    width: 0.95em;
+
+    height: 0.95em;
+
+}
+
+.vl-rg-title {
+
+    font-weight: 800;
+
+    font-size: 1.35em;
+
+    letter-spacing: 0.06em;
+
+    text-transform: uppercase;
+
+    margin: 0.5em 0 0.2em;
+
+    text-align: center;
+
+}
+
+.vl-rg-sub {
+
+    font-weight: 700;
+
+    font-size: 0.95em;
+
+    text-transform: uppercase;
+
+    color: #00ff88;
+
+    margin: 0 0 1em;
+
+    text-align: center;
+
+    animation: vlRgBlink 1.1s ease-in-out infinite;
+
+}
+
+@keyframes vlRgBlink {
+
+    0%,
+
+    100% {
+
+        opacity: 1;
+
+    }
+
+    50% {
+
+        opacity: 0.35;
+
+    }
+
+}
+
+.vl-rg-diagram {
+
+    width: 100%;
+
+    max-width: 22em;
+
+    height: 5.5em;
+
+    margin: 0.5em auto 1em;
+
+    position: relative;
+
+    border-radius: 0.5em;
+
+    background: rgba(0, 0, 0, 0.35);
+
+    overflow: hidden;
+
+}
+
+.vl-rg-dia-bat-wrap {
+
+    position: absolute;
+
+    left: 0.8em;
+
+    top: 50%;
+
+    transform: translateY(-50%);
+
+    width: 3.2em;
+
+    height: 4em;
+
+}
+
+.vl-rg-dia-zone {
+
+    position: absolute;
+
+    left: 0.2em;
+
+    top: 50%;
+
+    width: 2.8em;
+
+    height: 3.2em;
+
+    transform: translateY(-50%);
+
+    border-radius: 0.35em;
+
+    border: 0.1em solid #ffd700;
+
+    box-shadow: 0 0 0.6em #ffd700, 0 0 1.2em rgba(0, 255, 136, 0.5);
+
+    animation: vlRgDiaGlow 1.2s ease-in-out infinite;
+
+    opacity: 0.85;
+
+}
+
+@keyframes vlRgDiaGlow {
+
+    0%,
+
+    100% {
+
+        opacity: 0.7;
+
+        transform: translateY(-50%) scale(1);
+
+    }
+
+    50% {
+
+        opacity: 1;
+
+        transform: translateY(-50%) scale(1.05);
+
+    }
+
+}
+
+.vl-rg-dia-bat {
+
+    position: absolute;
+
+    left: 1.2em;
+
+    top: 0.4em;
+
+    width: 0.45em;
+
+    height: 3.2em;
+
+    background: linear-gradient(90deg, #4a3728, #8b6914);
+
+    border-radius: 0.15em;
+
+    transform-origin: 50% 90%;
+
+    transform: rotate(-18deg);
+
+}
+
+.vl-rg-dia-ball {
+
+    position: absolute;
+
+    top: 50%;
+
+    right: 0.5em;
+
+    width: 0.85em;
+
+    height: 0.85em;
+
+    margin-top: -0.425em;
+
+    border-radius: 50%;
+
+    background: radial-gradient(circle at 30% 30%, #fff, #eef2f7 45%, #9aa3b2);
+
+    border-left: 0.08em dashed #e11d48;
+
+    border-right: 0.08em dashed #e11d48;
+
+    box-shadow: 0 0.15em 0.35em rgba(0, 0, 0, 0.45), 0.6em 0 0.6em -0.3em rgba(255, 255, 255, 0.35);
+
+    animation: vlRgDiaBall 2.4s linear infinite;
+
+}
+
+@keyframes vlRgDiaBall {
+
+    0% {
+
+        transform: translateX(0) scaleY(1);
+
+    }
+
+    12% {
+
+        transform: translateX(-2em) scaleY(0.92);
+
+    }
+
+    70% {
+
+        transform: translateX(-13.5em) scaleY(1);
+
+    }
+
+    88% {
+
+        transform: translateX(-16em) scaleY(0.92);
+
+    }
+
+    100% {
+
+        transform: translateX(-18em) scaleY(1);
+
+    }
+
+}
+
+.vl-rg-instructions {
+
+    width: 100%;
+
+    max-width: 24em;
+
+    list-style: none;
+
+    padding: 0;
+
+    margin: 0 0 1em;
+
+}
+
+.vl-rg-instructions li {
+
+    display: flex;
+
+    align-items: flex-start;
+
+    gap: 0.5em;
+
+    font-size: 0.88em;
+
+    font-weight: 600;
+
+    margin-bottom: 0.55em;
+
+    line-height: 1.35;
+
+}
+
+.vl-rg-tiers {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 0.5em;
+
+    width: 100%;
+
+    max-width: 24em;
+
+    margin-bottom: 1.2em;
+
+}
+
+.vl-rg-tier {
+
+    border-radius: 0.45em;
+
+    padding: 0.55em 0.75em;
+
+    font-weight: 800;
+
+    font-size: 0.82em;
+
+    text-transform: uppercase;
+
+    letter-spacing: 0.03em;
+
+    border: 0.12em solid;
+
+}
+
+.vl-rg-tier-gold {
+
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.25), rgba(80, 60, 0, 0.4));
+
+    border-color: #ffd700;
+
+    color: #ffe566;
+
+}
+
+.vl-rg-tier-silver {
+
+    background: linear-gradient(135deg, rgba(192, 192, 192, 0.2), rgba(60, 60, 70, 0.45));
+
+    border-color: #c0c0c0;
+
+    color: #e8e8ec;
+
+}
+
+.vl-rg-tier-miss {
+
+    background: linear-gradient(135deg, rgba(180, 60, 60, 0.2), rgba(40, 30, 30, 0.5));
+
+    border-color: #884444;
+
+    color: #c8a8a8;
+
+}
+
+.vl-rg-btn-primary {
+
+    appearance: none;
+
+    border: none;
+
+    cursor: pointer;
+
+    font-weight: 800;
+
+    font-size: 1.05em;
+
+    text-transform: uppercase;
+
+    letter-spacing: 0.05em;
+
+    padding: 0.85em 1.8em;
+
+    border-radius: 0.5em;
+
+    background: linear-gradient(180deg, #00ff88, #00c266);
+
+    color: #041208;
+
+    box-shadow: 0 0.35em 1em rgba(0, 255, 136, 0.35);
+
+    transform: translateZ(0);
+
+    transition: transform 0.15s ease, opacity 0.15s ease;
+
+    touch-action: manipulation;
+
+}
+
+.vl-rg-btn-primary:active {
+
+    transform: scale(0.97);
+
+}
+
+.vl-rg-count-inner {
+
+    min-height: 100%;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    background: radial-gradient(ellipse at center, #1a2040 0%, #0a0a0f 70%);
+
+    color: #fff;
+
+}
+
+.vl-rg-count-num {
+
+    position: absolute;
+
+    font-weight: 900;
+
+    font-size: 5em;
+
+    text-transform: uppercase;
+
+    opacity: 0;
+
+    pointer-events: none;
+
+    text-shadow: 0 0 0.5em rgba(0, 255, 136, 0.4);
+
+}
+
+.vl-rg-count-num[data-phase="show"] {
+
+    animation: vlRgCountPop 0.85s ease forwards;
+
+}
+
+@keyframes vlRgCountPop {
+
+    0% {
+
+        opacity: 0;
+
+        transform: scale(0.4);
+
+    }
+
+    35% {
+
+        opacity: 1;
+
+        transform: scale(1.15);
+
+    }
+
+    100% {
+
+        opacity: 0;
+
+        transform: scale(1.6);
+
+    }
+
+}
+
+.vl-rg-game-inner {
+
+    height: 100%;
+
+    background: #070b1f;
+
+    color: #eee;
+
+    display: flex;
+
+    flex-direction: column;
+
+    padding: 1em 1em max(1.2em, calc(0.6em + env(safe-area-inset-bottom, 0px)));
+
+    position: relative;
+
+    overflow: hidden;
+
+    touch-action: manipulation;
+
+    user-select: none;
+
+    -webkit-user-select: none;
+
+    -webkit-tap-highlight-color: transparent;
+
+}
+
+.vl-rg-game-inner[data-shake="on"] {
+
+    animation: vlRgShake 0.42s ease both;
+
+}
+
+@keyframes vlRgShake {
+
+    0%,
+
+    100% {
+
+        transform: translate3d(0, 0, 0);
+
+    }
+
+    20% {
+
+        transform: translate3d(-0.32em, 0.16em, 0);
+
+    }
+
+    40% {
+
+        transform: translate3d(0.3em, -0.16em, 0);
+
+    }
+
+    60% {
+
+        transform: translate3d(-0.2em, 0.1em, 0);
+
+    }
+
+    80% {
+
+        transform: translate3d(0.14em, 0, 0);
+
+    }
+
+}
+
+.vl-rg-stadium {
+
+    position: absolute;
+
+    inset: 0;
+
+    width: 100%;
+
+    height: 100%;
+
+    z-index: 0;
+
+    pointer-events: none;
+
+}
+
+.vl-rg-stadium-light {
+
+    animation: vlRgLightFlicker 3.2s ease-in-out infinite;
+
+}
+
+@keyframes vlRgLightFlicker {
+
+    0%,
+
+    100% {
+
+        opacity: 1;
+
+    }
+
+    50% {
+
+        opacity: 0.75;
+
+    }
+
+}
+
+.vl-rg-game-hud {
+
+    position: relative;
+
+    z-index: 1;
+
+    padding-right: 3em;
+
+    display: flex;
+
+    flex-wrap: wrap;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    gap: 0.65em;
+
+    margin-bottom: 0.35em;
+
+    flex-shrink: 0;
+
+}
+
+.vl-rg-game-hud-pill {
+
+    font-weight: 800;
+
+    font-size: 0.78em;
+
+    text-transform: uppercase;
+
+    letter-spacing: 0.06em;
+
+    padding: 0.45em 0.75em;
+
+    border-radius: 2em;
+
+    background: rgba(0, 255, 136, 0.12);
+
+    border: 0.1em solid rgba(0, 255, 136, 0.35);
+
+    color: #00ff88;
+
+}
+
+.vl-rg-game-hud-stats {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 0.5em;
+
+    flex-wrap: wrap;
+
+}
+
+.vl-rg-game-hud-lives {
+
+    display: flex;
+
+    gap: 0.28em;
+
+}
+
+.vl-rg-game-life {
+
+    width: 0.65em;
+
+    height: 0.65em;
+
+    border-radius: 50%;
+
+    background: rgba(255, 255, 255, 0.2);
+
+    border: 0.1em solid rgba(255, 255, 255, 0.35);
+
+    transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+
+}
+
+.vl-rg-game-life[data-used="true"] {
+
+    background: rgba(255, 80, 80, 0.35);
+
+    border-color: rgba(255, 120, 120, 0.55);
+
+    transform: scale(0.85);
+
+}
+
+.vl-rg-game-life[data-current="true"] {
+
+    background: rgba(0, 255, 136, 0.35);
+
+    border-color: #00ff88;
+
+    box-shadow: 0 0 0.5em rgba(0, 255, 136, 0.4);
+
+}
+
+.vl-rg-game-life[data-result="perfect"] {
+
+    background: #ffd700;
+
+    border-color: #fff3b0;
+
+    box-shadow: 0 0 0.5em rgba(255, 215, 0, 0.7);
+
+    transform: scale(1);
+
+}
+
+.vl-rg-game-life[data-result="good"] {
+
+    background: #34d399;
+
+    border-color: #a7f3d0;
+
+    transform: scale(1);
+
+}
+
+.vl-rg-game-life[data-result="miss"] {
+
+    background: #ef4444;
+
+    border-color: #fca5a5;
+
+}
+
+.vl-rg-game-hud-score {
+
+    font-weight: 900;
+
+    font-size: 0.78em;
+
+    letter-spacing: 0.06em;
+
+    padding: 0.45em 0.75em;
+
+    border-radius: 2em;
+
+    background: rgba(255, 215, 0, 0.14);
+
+    border: 0.1em solid rgba(255, 215, 0, 0.45);
+
+    color: #ffe566;
+
+    white-space: nowrap;
+
+}
+
+.vl-rg-game-hud-score[data-bump="on"] {
+
+    animation: vlRgBump 0.45s ease;
+
+}
+
+@keyframes vlRgBump {
+
+    0%,
+
+    100% {
+
+        transform: scale(1);
+
+    }
+
+    40% {
+
+        transform: scale(1.25);
+
+    }
+
+}
+
+.vl-rg-game-toast {
+
+    position: absolute;
+
+    left: 50%;
+
+    top: 20%;
+
+    z-index: 20;
+
+    display: flex;
+
+    flex-direction: column;
+
+    align-items: center;
+
+    gap: 0.1em;
+
+    padding: 0.45em 1.4em 0.55em;
+
+    border-radius: 1em;
+
+    text-align: center;
+
+    white-space: nowrap;
+
+    pointer-events: none;
+
+    opacity: 0;
+
+    transform: translate3d(-50%, 0, 0);
+
+}
+
+.vl-rg-game-toast[data-show="true"] {
+
+    animation: vlRgToastPop 1.05s cubic-bezier(0.2, 0.9, 0.3, 1.2) forwards;
+
+}
+
+@keyframes vlRgToastPop {
+
+    0% {
+
+        opacity: 0;
+
+        transform: translate3d(-50%, 0.6em, 0) scale(0.4);
+
+    }
+
+    18% {
+
+        opacity: 1;
+
+        transform: translate3d(-50%, 0, 0) scale(1.18);
+
+    }
+
+    32% {
+
+        opacity: 1;
+
+        transform: translate3d(-50%, 0, 0) scale(1);
+
+    }
+
+    75% {
+
+        opacity: 1;
+
+        transform: translate3d(-50%, -0.3em, 0) scale(1);
+
+    }
+
+    100% {
+
+        opacity: 0;
+
+        transform: translate3d(-50%, -1.2em, 0) scale(0.95);
+
+    }
+
+}
+
+.vl-rg-toast-main {
+
+    font-weight: 900;
+
+    font-size: 1.7em;
+
+    letter-spacing: 0.06em;
+
+    line-height: 1.1;
+
+}
+
+.vl-rg-toast-sub {
+
+    font-weight: 800;
+
+    font-size: 0.78em;
+
+    letter-spacing: 0.1em;
+
+    text-transform: uppercase;
+
+    opacity: 0.92;
+
+}
+
+.vl-rg-game-toast[data-tier="perfect"] {
+
+    background: radial-gradient(ellipse at center, rgba(120, 85, 0, 0.75), rgba(40, 28, 0, 0.75));
+
+    color: #ffe566;
+
+    border: 0.12em solid #ffd700;
+
+    text-shadow: 0 0 0.4em rgba(255, 215, 0, 0.8), 0 0.08em 0 #a16207;
+
+    box-shadow: 0 0 1.4em rgba(255, 215, 0, 0.45);
+
+}
+
+.vl-rg-game-toast[data-tier="good"] {
+
+    background: rgba(6, 60, 40, 0.75);
+
+    color: #6ee7b7;
+
+    border: 0.12em solid #34d399;
+
+    text-shadow: 0 0 0.35em rgba(52, 211, 153, 0.7);
+
+}
+
+.vl-rg-game-toast[data-tier="miss"] {
+
+    background: rgba(70, 15, 20, 0.75);
+
+    color: #fca5a5;
+
+    border: 0.12em solid #ef4444;
+
+}
+
+.vl-rg-field {
+
+    flex: 1;
+
+    position: relative;
+
+    z-index: 1;
+
+    display: flex;
+
+    align-items: center;
+
+    width: 100%;
+
+    max-width: 30em;
+
+    margin: 0 auto;
+
+    min-height: 14em;
+
+}
+
+.vl-rg-batter {
+
+    position: relative;
+
+    width: 7em;
+
+    height: 11em;
+
+    flex-shrink: 0;
+
+    z-index: 2;
+
+}
+
+.vl-rg-batter-svg {
+
+    position: absolute;
+
+    inset: 0;
+
+    width: 100%;
+
+    height: 100%;
+
+    overflow: visible;
+
+}
+
+.vl-rg-bat-wrap {
+
+    position: absolute;
+
+    left: 4.2em;
+
+    top: 5.5em;
+
+    width: 0;
+
+    height: 0;
+
+    transform-origin: 0 0;
+
+    transform: rotate(-32deg);
+
+}
+
+.vl-rg-bat-wrap[data-state="swinging"] {
+
+    animation: vlRgBatSwing 0.62s ease-out forwards;
+
+}
+
+@keyframes vlRgBatSwing {
+
+    0% {
+
+        transform: rotate(-32deg);
+
+    }
+
+    16% {
+
+        transform: rotate(98deg);
+
+    }
+
+    42% {
+
+        transform: rotate(150deg);
+
+    }
+
+    100% {
+
+        transform: rotate(-32deg);
+
+    }
+
+}
+
+.vl-rg-sweet {
+
+    position: absolute;
+
+    left: -0.5em;
+
+    bottom: 3.3em;
+
+    width: 1em;
+
+    height: 2em;
+
+    border-radius: 0.5em;
+
+    background: radial-gradient(ellipse at center, rgba(255, 215, 0, 0.45), rgba(255, 215, 0, 0) 70%);
+
+    box-shadow: 0 0 0.6em rgba(255, 215, 0, 0.45);
+
+    animation: vlRgSweetPulse 0.9s ease-in-out infinite;
+
+}
+
+@keyframes vlRgSweetPulse {
+
+    0%,
+
+    100% {
+
+        opacity: 0.9;
+
+        transform: scale(1);
+
+    }
+
+    50% {
+
+        opacity: 1;
+
+        transform: scale(1.07);
+
+    }
+
+}
+
+.vl-rg-bat {
+
+    position: absolute;
+
+    left: -0.5em;
+
+    bottom: -0.45em;
+
+    width: 1em;
+
+    height: 5.6em;
+
+    filter: drop-shadow(0 0.15em 0.2em rgba(0, 0, 0, 0.45));
+
+}
+
+.vl-rg-bat svg {
+
+    display: block;
+
+    width: 100%;
+
+    height: 100%;
+
+}
+
+.vl-rg-ball-track {
+
+    position: absolute;
+
+    left: 6.2em;
+
+    right: 0.5em;
+
+    top: 50%;
+
+    height: 3em;
+
+    margin-top: -1.5em;
+
+    border-radius: 1.5em;
+
+    background: linear-gradient(180deg, rgba(10, 14, 35, 0.6), rgba(10, 14, 35, 0.82));
+
+    border: 0.08em solid rgba(255, 255, 255, 0.14);
+
+    box-shadow: inset 0 0 0.8em rgba(0, 0, 0, 0.55), 0 0.3em 1em rgba(0, 0, 0, 0.35);
+
+}
+
+.vl-rg-track-barem {
+
+    position: absolute;
+
+    left: 0;
+
+    top: 0;
+
+    right: 0;
+
+    bottom: 0;
+
+    pointer-events: none;
+
+    z-index: 1;
+
+}
+
+.vl-rg-track-barem-good {
+
+    position: absolute;
+
+    left: ${((CONFIG.targetNorm - CONFIG.goodHalfNorm) * 100).toFixed(2)}%;
+
+    top: 0.25em;
+
+    bottom: 0.25em;
+
+    width: ${(CONFIG.goodHalfNorm * 200).toFixed(2)}%;
+
+    border-radius: 0.7em;
+
+    background: linear-gradient(180deg, rgba(52, 211, 153, 0.38), rgba(16, 185, 129, 0.16));
+
+    border: 0.08em solid rgba(52, 211, 153, 0.65);
+
+}
+
+.vl-rg-track-barem-perfect {
+
+    position: absolute;
+
+    left: ${((CONFIG.targetNorm - CONFIG.perfectHalfNorm) * 100).toFixed(2)}%;
+
+    top: 0.08em;
+
+    bottom: 0.08em;
+
+    width: ${(CONFIG.perfectHalfNorm * 200).toFixed(2)}%;
+
+    border-radius: 0.5em;
+
+    background: linear-gradient(180deg, rgba(255, 230, 102, 0.8), rgba(234, 179, 8, 0.45));
+
+    border: 0.1em solid #ffd700;
+
+    box-shadow: 0 0 0.8em rgba(255, 215, 0, 0.55);
+
+    animation: vlRgBaremPulse 1.1s ease-in-out infinite;
+
+}
+
+.vl-rg-track-barem-line {
+
+    position: absolute;
+
+    left: ${(CONFIG.targetNorm * 100).toFixed(2)}%;
+
+    top: -0.45em;
+
+    bottom: -0.45em;
+
+    width: 0.14em;
+
+    margin-left: -0.07em;
+
+    border-radius: 0.1em;
+
+    background: #fff;
+
+    box-shadow: 0 0 0.45em #fff, 0 0 0.9em rgba(255, 215, 0, 0.8);
+
+}
+
+.vl-rg-ball-track[data-zone="good"] .vl-rg-track-barem-good {
+
+    background: linear-gradient(180deg, rgba(52, 211, 153, 0.6), rgba(16, 185, 129, 0.3));
+
+    box-shadow: 0 0 1em rgba(52, 211, 153, 0.6);
+
+}
+
+.vl-rg-ball-track[data-zone="perfect"] .vl-rg-track-barem-perfect {
+
+    animation: none;
+
+    box-shadow: 0 0 1.4em rgba(255, 215, 0, 0.95), 0 0 0.4em #fff;
+
+}
+
+.vl-rg-ball-track[data-zone="perfect"] .vl-rg-track-barem-good {
+
+    background: linear-gradient(180deg, rgba(52, 211, 153, 0.6), rgba(16, 185, 129, 0.3));
+
+}
+
+@keyframes vlRgBaremPulse {
+
+    0%,
+
+    100% {
+
+        opacity: 1;
+
+    }
+
+    50% {
+
+        opacity: 0.72;
+
+    }
+
+}
+
+.vl-rg-track-barem-cap {
+
+    position: absolute;
+
+    left: ${(CONFIG.targetNorm * 100).toFixed(2)}%;
+
+    top: -2.3em;
+
+    transform: translateX(-50%);
+
+    font-size: 0.58em;
+
+    font-weight: 900;
+
+    letter-spacing: 0.08em;
+
+    white-space: nowrap;
+
+    color: #ffe566;
+
+    text-shadow: 0 0.1em 0.25em rgba(0, 0, 0, 0.8);
+
+    z-index: 2;
+
+    pointer-events: none;
+
+}
+
+.vl-rg-game-ball-shell {
+
+    position: absolute;
+
+    left: 0;
+
+    top: 50%;
+
+    margin-top: -0.75em;
+
+    width: 1.5em;
+
+    height: 1.5em;
+
+    will-change: transform;
+
+    z-index: 3;
+
+}
+
+.vl-rg-game-ball-shell[data-travel="on"]::after {
+
+    content: "";
+
+    position: absolute;
+
+    left: 55%;
+
+    top: 22%;
+
+    width: 2.8em;
+
+    height: 56%;
+
+    border-radius: 1em;
+
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0));
+
+    z-index: -1;
+
+}
+
+.vl-rg-game-ball {
+
+    width: 100%;
+
+    height: 100%;
+
+    filter: drop-shadow(0 0.2em 0.3em rgba(0, 0, 0, 0.55));
+
+}
+
+.vl-rg-game-ball svg {
+
+    display: block;
+
+    width: 100%;
+
+    height: 100%;
+
+}
+
+.vl-rg-game-ball-shell[data-travel="on"] .vl-rg-game-ball svg {
+
+    animation: vlRgBallSpin 0.45s linear infinite;
+
+}
+
+@keyframes vlRgBallSpin {
+
+    to {
+
+        transform: rotate(-360deg);
+
+    }
+
+}
+
+.vl-rg-game-ball-shell[data-hit="perfect"] .vl-rg-game-ball {
+
+    animation: vlRgBallFlyPerfect 0.9s cubic-bezier(0.15, 0.7, 0.3, 1) forwards;
+
+}
+
+.vl-rg-game-ball-shell[data-hit="good"] .vl-rg-game-ball {
+
+    animation: vlRgBallFlyGood 0.8s cubic-bezier(0.2, 0.6, 0.4, 1) forwards;
+
+}
+
+.vl-rg-game-ball-shell[data-hit="miss"] .vl-rg-game-ball {
+
+    animation: vlRgBallPass 0.55s ease-in forwards;
+
+}
+
+@keyframes vlRgBallFlyPerfect {
+
+    0% {
+
+        opacity: 1;
+
+        transform: translate3d(0, 0, 0) scale(1.2);
+
+    }
+
+    100% {
+
+        opacity: 0;
+
+        transform: translate3d(16em, -12em, 0) scale(0.25);
+
+    }
+
+}
+
+@keyframes vlRgBallFlyGood {
+
+    0% {
+
+        opacity: 1;
+
+        transform: translate3d(0, 0, 0) scale(1);
+
+    }
+
+    100% {
+
+        opacity: 0;
+
+        transform: translate3d(10em, -5em, 0) scale(0.5);
+
+    }
+
+}
+
+@keyframes vlRgBallPass {
+
+    0% {
+
+        opacity: 1;
+
+        transform: translate3d(0, 0, 0);
+
+    }
+
+    100% {
+
+        opacity: 0;
+
+        transform: translate3d(-7em, 0.9em, 0);
+
+    }
+
+}
+
+.vl-rg-sparks {
+
+    position: absolute;
+
+    top: 50%;
+
+    width: 0;
+
+    height: 0;
+
+    z-index: 4;
+
+    pointer-events: none;
+
+}
+
+.vl-rg-sparks::before {
+
+    content: "";
+
+    position: absolute;
+
+    left: -1.5em;
+
+    top: -1.5em;
+
+    width: 3em;
+
+    height: 3em;
+
+    border-radius: 50%;
+
+    border: 0.2em solid #fff;
+
+    opacity: 0;
+
+    animation: vlRgImpactRing 0.45s ease-out forwards;
+
+}
+
+.vl-rg-sparks[data-tier="perfect"]::before {
+
+    border-color: #ffe566;
+
+}
+
+.vl-rg-sparks[data-tier="good"]::before {
+
+    border-color: #6ee7b7;
+
+}
+
+@keyframes vlRgImpactRing {
+
+    0% {
+
+        opacity: 1;
+
+        transform: scale(0.2);
+
+    }
+
+    100% {
+
+        opacity: 0;
+
+        transform: scale(1.6);
+
+    }
+
+}
+
+.vl-rg-spark {
+
+    position: absolute;
+
+    left: -0.2em;
+
+    top: -0.2em;
+
+    width: 0.4em;
+
+    height: 0.4em;
+
+    border-radius: 50%;
+
+    animation: vlRgSpark 0.65s ease-out forwards;
+
+}
+
+.vl-rg-sparks[data-tier="perfect"] .vl-rg-spark {
+
+    background: #ffe566;
+
+    box-shadow: 0 0 0.5em #ffd700;
+
+}
+
+.vl-rg-sparks[data-tier="good"] .vl-rg-spark {
+
+    background: #a7f3d0;
+
+    box-shadow: 0 0 0.4em #34d399;
+
+}
+
+@keyframes vlRgSpark {
+
+    0% {
+
+        opacity: 1;
+
+        transform: translate3d(0, 0, 0) scale(1);
+
+    }
+
+    100% {
+
+        opacity: 0;
+
+        transform: translate3d(var(--tx), var(--ty), 0) scale(0.2);
+
+    }
+
+}
+
+.vl-rg-meter {
+
+    position: absolute;
+
+    z-index: 1;
+
+    left: 7em;
+
+    right: 1.2em;
+
+    top: 50%;
+
+    margin-top: 3.4em;
+
+    padding: 0.55em 0.7em 0.4em;
+
+    border-radius: 0.8em;
+
+    background: rgba(5, 8, 22, 0.6);
+
+    border: 0.08em solid rgba(255, 255, 255, 0.1);
+
+}
+
+.vl-rg-meter-bar {
+
+    position: relative;
+
+    height: 1em;
+
+    border-radius: 1em;
+
+    background: linear-gradient(90deg, rgba(239, 68, 68, 0.6), rgba(239, 68, 68, 0.2) 25%, rgba(239, 68, 68, 0.2) 75%, rgba(239, 68, 68, 0.6));
+
+    border: 0.1em solid rgba(255, 255, 255, 0.2);
+
+    box-shadow: inset 0 0.15em 0.4em rgba(0, 0, 0, 0.5), 0 0.2em 0.6em rgba(0, 0, 0, 0.35);
+
+}
+
+.vl-rg-meter-good {
+
+    position: absolute;
+
+    top: 0;
+
+    bottom: 0;
+
+    left: ${(50 - (CONFIG.goodHalfNorm / CONFIG.meterRange) * 50).toFixed(2)}%;
+
+    width: ${((CONFIG.goodHalfNorm / CONFIG.meterRange) * 100).toFixed(2)}%;
+
+    background: linear-gradient(180deg, rgba(52, 211, 153, 0.75), rgba(16, 185, 129, 0.45));
+
+}
+
+.vl-rg-meter-perfect {
+
+    position: absolute;
+
+    top: -0.1em;
+
+    bottom: -0.1em;
+
+    left: ${(50 - (CONFIG.perfectHalfNorm / CONFIG.meterRange) * 50).toFixed(2)}%;
+
+    width: ${((CONFIG.perfectHalfNorm / CONFIG.meterRange) * 100).toFixed(2)}%;
+
+    border-radius: 0.2em;
+
+    background: linear-gradient(180deg, #fff3b0, #eab308);
+
+    box-shadow: 0 0 0.6em rgba(255, 215, 0, 0.7);
+
+}
+
+.vl-rg-meter-marks {
+
+    position: absolute;
+
+    inset: 0;
+
+}
+
+.vl-rg-meter-mark {
+
+    position: absolute;
+
+    top: 50%;
+
+    width: 0.75em;
+
+    height: 0.75em;
+
+    margin: -0.375em 0 0 -0.375em;
+
+    border-radius: 50%;
+
+    border: 0.12em solid #fff;
+
+    box-shadow: 0 0.1em 0.3em rgba(0, 0, 0, 0.6);
+
+    animation: vlRgMarkIn 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.4) both;
+
+}
+
+.vl-rg-meter-mark[data-tier="perfect"] {
+
+    background: #ffd700;
+
+}
+
+.vl-rg-meter-mark[data-tier="good"] {
+
+    background: #34d399;
+
+}
+
+.vl-rg-meter-mark[data-tier="miss"] {
+
+    background: #ef4444;
+
+}
+
+@keyframes vlRgMarkIn {
+
+    0% {
+
+        opacity: 0;
+
+        transform: translate3d(0, -1.2em, 0) scale(0.3);
+
+    }
+
+    100% {
+
+        opacity: 1;
+
+        transform: translate3d(0, 0, 0) scale(1);
+
+    }
+
+}
+
+.vl-rg-meter-needle {
+
+    position: absolute;
+
+    left: 0;
+
+    top: -0.4em;
+
+    bottom: -0.4em;
+
+    width: 0.26em;
+
+    margin-left: -0.13em;
+
+    border-radius: 0.2em;
+
+    background: #fff;
+
+    box-shadow: 0 0 0.5em #fff, 0 0 1em rgba(34, 211, 238, 0.85);
+
+    will-change: transform;
+
+}
+
+.vl-rg-meter-labels {
+
+    display: flex;
+
+    justify-content: space-between;
+
+    margin-top: 0.45em;
+
+    font-size: 0.62em;
+
+    font-weight: 800;
+
+    letter-spacing: 0.12em;
+
+    color: rgba(255, 255, 255, 0.65);
+
+}
+
+.vl-rg-hit-row {
+
+    position: relative;
+
+    z-index: 5;
+
+    display: flex;
+
+    flex-direction: column;
+
+    align-items: center;
+
+    gap: 0.55em;
+
+    margin-top: 1em;
+
+    flex-shrink: 0;
+
+}
+
+.vl-rg-btn-hit {
+
+    appearance: none;
+
+    position: relative;
+
+    border: none;
+
+    cursor: pointer;
+
+    font-weight: 900;
+
+    font-size: 1.25em;
+
+    letter-spacing: 0.12em;
+
+    padding: 0.8em 2.8em;
+
+    border-radius: 2em;
+
+    background: linear-gradient(180deg, #5bffb0, #00c266);
+
+    color: #041208;
+
+    box-shadow: 0 0.3em 0 #00803f, 0 0.6em 1.4em rgba(0, 255, 136, 0.35);
+
+    touch-action: manipulation;
+
+    transition: transform 0.08s ease, box-shadow 0.08s ease;
+
+}
+
+.vl-rg-btn-hit::after {
+
+    content: "";
+
+    position: absolute;
+
+    inset: -0.25em;
+
+    border-radius: 2.2em;
+
+    border: 0.12em solid rgba(0, 255, 136, 0.7);
+
+    pointer-events: none;
+
+    animation: vlRgHitRing 1.4s ease-out infinite;
+
+}
+
+@keyframes vlRgHitRing {
+
+    0% {
+
+        opacity: 0.9;
+
+        transform: scale(1);
+
+    }
+
+    100% {
+
+        opacity: 0;
+
+        transform: scale(1.18, 1.45);
+
+    }
+
+}
+
+.vl-rg-btn-hit:active {
+
+    transform: translateY(0.2em);
+
+    box-shadow: 0 0.1em 0 #00803f, 0 0.3em 0.8em rgba(0, 255, 136, 0.35);
+
+}
+
+.vl-rg-hint {
+
+    margin: 0;
+
+    font-size: 0.72em;
+
+    font-weight: 700;
+
+    letter-spacing: 0.04em;
+
+    color: rgba(255, 255, 255, 0.6);
+
+    text-align: center;
+
+}
+
+.vl-rg-result-inner {
+
+    min-height: 100%;
+
+    min-height: 100dvh;
+
+    padding: 1.2em;
+
+    padding-bottom: max(1.2em, env(safe-area-inset-bottom, 0px));
+
+    display: flex;
+
+    flex-direction: column;
+
+    align-items: center;
+
+    justify-content: center;
+
+    text-align: center;
+
+    position: relative;
+
+    overflow: hidden;
+
+}
+
+.vl-rg-screen-result[data-result="perfect"] .vl-rg-result-inner {
+
+    background: radial-gradient(ellipse at center, #3a3008 0%, #0a0a0f 75%);
+
+    color: #ffd700;
+
+}
+
+.vl-rg-screen-result[data-result="good"] .vl-rg-result-inner {
+
+    background: radial-gradient(ellipse at center, #2a2a35 0%, #0a0a0f 75%);
+
+    color: #c0c0c0;
+
+}
+
+.vl-rg-screen-result[data-result="miss"] .vl-rg-result-inner {
+
+    background: radial-gradient(ellipse at center, #301818 0%, #0a0a0f 75%);
+
+    color: #b09090;
+
+}
+
+.vl-rg-screen-result[data-result="summary"][data-grade="high"] .vl-rg-result-inner {
+
+    background: radial-gradient(ellipse at center, #3a3008 0%, #0a0a0f 75%);
+
+    color: #ffd700;
+
+}
+
+.vl-rg-screen-result[data-result="summary"][data-grade="mid"] .vl-rg-result-inner {
+
+    background: radial-gradient(ellipse at center, #2a2a35 0%, #0a0a0f 75%);
+
+    color: #c0c0c0;
+
+}
+
+.vl-rg-screen-result[data-result="summary"][data-grade="low"] .vl-rg-result-inner {
+
+    background: radial-gradient(ellipse at center, #301818 0%, #0a0a0f 75%);
+
+    color: #b09090;
+
+}
+
+.vl-rg-fx {
+
+    position: absolute;
+
+    inset: 0;
+
+    pointer-events: none;
+
+    overflow: hidden;
+
+}
+
+.vl-rg-particle {
+
+    position: absolute;
+
+    width: 0.35em;
+
+    height: 0.35em;
+
+    border-radius: 0.08em;
+
+    opacity: 0;
+
+    left: 50%;
+
+    top: 40%;
+
+}
+
+.vl-rg-screen-result[data-result="perfect"] .vl-rg-particle,
+
+.vl-rg-screen-result[data-result="summary"][data-grade="high"] .vl-rg-particle {
+
+    background: #ffd700;
+
+    animation: vlRgConfetti 1.4s ease-out forwards;
+
+}
+
+.vl-rg-screen-result[data-result="good"] .vl-rg-particle,
+
+.vl-rg-screen-result[data-result="summary"][data-grade="mid"] .vl-rg-particle {
+
+    background: #e8e8f0;
+
+    animation: vlRgStarBurst 1.2s ease-out forwards;
+
+}
+
+@keyframes vlRgConfetti {
+
+    0% {
+
+        opacity: 1;
+
+        transform: translate(0, 0) rotate(0deg) scale(1);
+
+    }
+
+    100% {
+
+        opacity: 0;
+
+        transform: translate(var(--tx), var(--ty)) rotate(720deg) scale(0.3);
+
+    }
+
+}
+
+@keyframes vlRgStarBurst {
+
+    0% {
+
+        opacity: 1;
+
+        transform: translate(0, 0) scale(1);
+
+    }
+
+    100% {
+
+        opacity: 0;
+
+        transform: translate(var(--tx), var(--ty)) scale(0.2);
+
+    }
+
+}
+
+.vl-rg-miss-ball {
+
+    position: absolute;
+
+    width: 1.2em;
+
+    height: 1.2em;
+
+    border-radius: 50%;
+
+    background: radial-gradient(circle at 30% 30%, #ddd, #777);
+
+    left: 30%;
+
+    top: 45%;
+
+    opacity: 0;
+
+}
+
+.vl-rg-screen-result[data-result="miss"] .vl-rg-miss-ball {
+
+    animation: vlRgMissFly 1s ease-in forwards;
+
+}
+
+@keyframes vlRgMissFly {
+
+    0% {
+
+        opacity: 1;
+
+        transform: translateX(0) scale(1);
+
+    }
+
+    100% {
+
+        opacity: 0.3;
+
+        transform: translateX(12em) scale(0.85);
+
+    }
+
+}
+
+.vl-rg-res-title {
+
+    font-weight: 900;
+
+    font-size: 1.45em;
+
+    text-transform: uppercase;
+
+    letter-spacing: 0.04em;
+
+    margin: 0 0 0.35em;
+
+    position: relative;
+
+    z-index: 2;
+
+}
+
+.vl-rg-res-sub {
+
+    font-weight: 600;
+
+    font-size: 0.95em;
+
+    margin: 0 0 1.2em;
+
+    max-width: 22em;
+
+    line-height: 1.45;
+
+    position: relative;
+
+    z-index: 2;
+
+}
+
+.vl-rg-res-breakdown {
+
+    width: 100%;
+
+    max-width: 20em;
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 0.4em;
+
+    margin: 0 0 1em;
+
+    font-weight: 700;
+
+    font-size: 0.82em;
+
+    text-transform: uppercase;
+
+    letter-spacing: 0.04em;
+
+    color: rgba(255, 255, 255, 0.75);
+
+    position: relative;
+
+    z-index: 2;
+
+}
+
+.vl-rg-res-breakdown > span {
+
+    display: flex;
+
+    justify-content: space-between;
+
+    padding: 0.35em 0.55em;
+
+    border-radius: 0.35em;
+
+    background: rgba(0, 0, 0, 0.22);
+
+    border: 0.06em solid rgba(255, 255, 255, 0.08);
+
+}
+
+.vl-rg-coupon {
+
+    width: 100%;
+
+    max-width: 20em;
+
+    border: 0.15em dashed currentColor;
+
+    border-radius: 0.45em;
+
+    padding: 0.85em 1em;
+
+    margin-bottom: 1.2em;
+
+    background: rgba(0, 0, 0, 0.25);
+
+    position: relative;
+
+    z-index: 2;
+
+}
+
+.vl-rg-coupon-label {
+
+    font-size: 0.7em;
+
+    font-weight: 700;
+
+    text-transform: uppercase;
+
+    opacity: 0.85;
+
+    margin-bottom: 0.35em;
+
+}
+
+.vl-rg-coupon-code {
+
+    font-weight: 900;
+
+    font-size: 1.15em;
+
+    letter-spacing: 0.12em;
+
+    user-select: all;
+
+    -webkit-user-select: all;
+
+}
+
+.vl-rg-screen-result[data-grade="low"] .vl-rg-coupon {
+
+    display: none;
+
+}
+
+.vl-rg-btn-copy {
+
+    appearance: none;
+
+    margin-top: 0.7em;
+
+    border: 0.1em solid currentColor;
+
+    background: rgba(255, 255, 255, 0.1);
+
+    color: inherit;
+
+    font-weight: 800;
+
+    font-size: 0.75em;
+
+    letter-spacing: 0.08em;
+
+    padding: 0.55em 1.3em;
+
+    border-radius: 2em;
+
+    cursor: pointer;
+
+    touch-action: manipulation;
+
+}
+
+.vl-rg-btn-copy[data-copied="true"] {
+
+    background: rgba(52, 211, 153, 0.25);
+
+    border-color: #34d399;
+
+    color: #a7f3d0;
+
+}
+
+.vl-rg-copy-ta {
+
+    position: fixed;
+
+    top: 0;
+
+    left: 0;
+
+    width: 1px;
+
+    height: 1px;
+
+    opacity: 0;
+
+    pointer-events: none;
+
+}
+
+.vl-rg-res-badge {
+
+    position: relative;
+
+    z-index: 2;
+
+    width: 5.5em;
+
+    height: 5.5em;
+
+    margin-bottom: 0.5em;
+
+    filter: drop-shadow(0 0.4em 0.8em rgba(0, 0, 0, 0.5));
+
+}
+
+.vl-rg-res-badge svg {
+
+    display: none;
+
+    width: 100%;
+
+    height: 100%;
+
+}
+
+.vl-rg-screen-result[data-grade="high"] .vl-rg-badge-high,
+
+.vl-rg-screen-result[data-grade="mid"] .vl-rg-badge-mid,
+
+.vl-rg-screen-result[data-grade="low"] .vl-rg-badge-low {
+
+    display: block;
+
+}
+
+#vlRefleksGame[data-screen="result"] .vl-rg-res-badge {
+
+    animation: vlRgBadgeIn 0.75s cubic-bezier(0.2, 0.9, 0.3, 1.35) both;
+
+}
+
+@keyframes vlRgBadgeIn {
+
+    0% {
+
+        opacity: 0;
+
+        transform: scale(0.2) rotate(-25deg);
+
+    }
+
+    100% {
+
+        opacity: 1;
+
+        transform: scale(1) rotate(0deg);
+
+    }
+
+}
+
+.vl-rg-screen-result[data-grade="high"] .vl-rg-particle:nth-child(3n + 1) {
+
+    background: #00ff88;
+
+}
+
+.vl-rg-screen-result[data-grade="high"] .vl-rg-particle:nth-child(3n + 2) {
+
+    background: #22d3ee;
+
+    border-radius: 50%;
+
+}
+
+.vl-rg-screen-result[data-grade="high"] .vl-rg-particle:nth-child(4n) {
+
+    width: 0.25em;
+
+    height: 0.6em;
+
+}
+
+.vl-rg-result-actions {
+
+    display: flex;
+
+    flex-wrap: wrap;
+
+    gap: 0.65em;
+
+    justify-content: center;
+
+    position: relative;
+
+    z-index: 2;
+
+}
+
+.vl-rg-btn-secondary {
+
+    appearance: none;
+
+    border: 0.12em solid rgba(255, 255, 255, 0.35);
+
+    cursor: pointer;
+
+    font-weight: 800;
+
+    font-size: 0.88em;
+
+    text-transform: uppercase;
+
+    padding: 0.65em 1.4em;
+
+    border-radius: 0.45em;
+
+    background: rgba(255, 255, 255, 0.08);
+
+    color: inherit;
+
+    touch-action: manipulation;
+
+}
+
+@media (max-width: 767px) {
+
+    .vl-rg-title {
+
+        font-size: 1.15em;
+
+    }
+
+    .vl-rg-count-num {
+
+        font-size: 4em;
+
+    }
+
+    .vl-rg-btn-hit {
+
+        font-size: 1.1em;
+
+        padding: 0.75em 2.4em;
+
+    }
+
+    .vl-rg-game-toast {
+
+        top: 17%;
+
+        font-size: 0.8em;
+
+    }
+
+    .vl-rg-hero {
+
+        width: 6em;
+
+        height: 4em;
+
+    }
+
+}
+
+@media (pointer: coarse) {
+
+    .vl-rg-btn-hit {
+
+        font-size: 1.28em;
+
+        padding: 0.85em 2.05em;
+
+        min-height: 2.85em;
+
+    }
+
+    .vl-rg-btn-primary {
+
+        padding: 1em 2em;
+
+    }
+
+}
+
+@media (min-width: 768px) {
+
+    #vlRefleksGame {
+
+        font-size: clamp(15px, 2vw, 19px);
+
+    }
+
+    .vl-rg-welcome-inner {
+
+        padding: 2em;
+
+        justify-content: safe center;
+
+    }
+
+    .vl-rg-tiers {
+
+        flex-direction: row;
+
+        flex-wrap: wrap;
+
+        justify-content: center;
+
+        max-width: 40em;
+
+    }
+
+    .vl-rg-tier {
+
+        flex: 1 1 28%;
+
+        min-width: 10em;
+
+    }
+
+    .vl-rg-game-inner {
+
+        padding: 1.5em 2em max(1.6em, calc(1em + env(safe-area-inset-bottom, 0px)));
+
+    }
+
+    .vl-rg-game-toast {
+
+        top: 18%;
+
+    }
+
+}
+
+@media (min-width: 1024px) {
+
+    #vlRefleksGame {
+
+        font-size: clamp(16px, 1.35vw, 20px);
+
+    }
+
+    .vl-rg-title {
+
+        font-size: 1.6em;
+
+    }
+
+    .vl-rg-count-num {
+
+        font-size: 6em;
+
+    }
+
+}
+
+`;
+
+
+
+    document.head.appendChild(styleEl);
+
+
+
+    const overlay = document.createElement("div");
+
+    overlay.id = "vlRefleksGame";
+
+    overlay.dataset.state = "open";
+
+    overlay.dataset.screen = "welcome";
+
+    overlay.setAttribute("lang", "tr");
+
+    overlay.innerHTML = `
+
+<button type="button" class="vl-rg-x" id="vlRgXBtn" aria-label="Kapat">
+
+  <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 4 L16 16 M16 4 L4 16" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>
+
+</button>
+
+<div class="vl-rg-screen vl-rg-screen-welcome">
+
+  <div class="vl-rg-welcome-inner">
+
+    <svg class="vl-rg-hero" viewBox="0 0 120 80" aria-hidden="true">
+
+      <defs>
+
+        <radialGradient id="vlRgHeroGlow" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#00ff88" stop-opacity="0.45"/><stop offset="1" stop-color="#00ff88" stop-opacity="0"/></radialGradient>
+
+        <linearGradient id="vlRgHeroBat" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#7c4a1e"/><stop offset="0.45" stop-color="#f0b469"/><stop offset="1" stop-color="#8a5a2b"/></linearGradient>
+
+        <radialGradient id="vlRgHeroBall" cx="0.35" cy="0.3" r="0.75"><stop offset="0" stop-color="#ffffff"/><stop offset="0.6" stop-color="#eef2f7"/><stop offset="1" stop-color="#9aa3b2"/></radialGradient>
+
+      </defs>
+
+      <circle cx="58" cy="40" r="38" fill="url(#vlRgHeroGlow)"/>
+
+      <g transform="rotate(-38 58 42)">
+
+        <path d="M55.6 76 L55.2 44 Q53.6 16 54.4 9 Q58 3 61.6 9 Q62.4 16 60.8 44 L60.4 76 Z" fill="url(#vlRgHeroBat)"/>
+
+        <rect x="55.3" y="60" width="5.4" height="14" rx="0.8" fill="#1e293b"/>
+
+        <ellipse cx="58" cy="77" rx="4" ry="2.2" fill="#5b3413"/>
+
+        <path d="M56.4 12 Q55.8 26 56.8 40" stroke="rgba(255,255,255,0.5)" stroke-width="1" fill="none"/>
+
+      </g>
+
+      <g stroke="#00ff88" stroke-width="2.4" stroke-linecap="round" opacity="0.85">
+
+        <path d="M96 22 H112"/>
+
+        <path d="M100 31 H118"/>
+
+        <path d="M96 40 H110"/>
+
+      </g>
+
+      <g transform="translate(84 31)">
+
+        <circle r="11.5" fill="url(#vlRgHeroBall)"/>
+
+        <path d="M-6.5 -9 Q-1.2 0 -6.5 9" stroke="#e11d48" stroke-width="1.3" fill="none" stroke-dasharray="1.8 1.3"/>
+
+        <path d="M6.5 -9 Q1.2 0 6.5 9" stroke="#e11d48" stroke-width="1.3" fill="none" stroke-dasharray="1.8 1.3"/>
+
+      </g>
+
+      <g fill="#ffe566">
+
+        <path d="M22 18 l1.6 3.4 3.6 0.4 -2.7 2.4 0.8 3.6 -3.3 -1.9 -3.3 1.9 0.8 -3.6 -2.7 -2.4 3.6 -0.4 z"/>
+
+        <path d="M12 46 l1 2.2 2.4 0.3 -1.8 1.6 0.5 2.4 -2.1 -1.2 -2.1 1.2 0.5 -2.4 -1.8 -1.6 2.4 -0.3 z"/>
+
+      </g>
+
+    </svg>
+
+    <h1 class="vl-rg-title">REFLEKS ŞAMPİYONU</h1>
+
+    <p class="vl-rg-sub">3 atış — top beyaz çizgiye geldiğinde vur!</p>
+
+    <div class="vl-rg-diagram" aria-hidden="true">
+
+      <div class="vl-rg-dia-bat-wrap">
+
+        <div class="vl-rg-dia-zone"></div>
+
+        <div class="vl-rg-dia-bat"></div>
+
+      </div>
+
+      <div class="vl-rg-dia-ball"></div>
+
+    </div>
+
+    <ul class="vl-rg-instructions">
+
+      <li><span>🎯</span><span>Top sağdan sopana doğru gelir. Beyaz çizgiye ulaştığı an vur!</span></li>
+
+      <li><span>⭐</span><span>Altın alan MÜKEMMEL (+100), yeşil alan İYİ (+50) sayılır. Dışı kaçar.</span></li>
+
+      <li><span>👆</span><span>Ekrana dokun, tıkla ya da BOŞLUK tuşuna bas. Her atışta top hızlanır!</span></li>
+
+    </ul>
+
+    <div class="vl-rg-tiers">
+
+      <div class="vl-rg-tier vl-rg-tier-gold">🏆 2–3 isabet → %30 İndirim</div>
+
+      <div class="vl-rg-tier vl-rg-tier-silver">⭐ 1 isabet → %15 İndirim</div>
+
+      <div class="vl-rg-tier vl-rg-tier-miss">💨 İsabet yok → Tekrar Dene</div>
+
+    </div>
+
+    <button type="button" class="vl-rg-btn-primary" id="vlRgStartBtn">OYNAMAYA BAŞLA</button>
+
+  </div>
+
+</div>
+
+<div class="vl-rg-screen vl-rg-screen-countdown">
+
+  <div class="vl-rg-count-inner">
+
+    <span class="vl-rg-count-num" id="vlRgC3">3</span>
+
+    <span class="vl-rg-count-num" id="vlRgC2">2</span>
+
+    <span class="vl-rg-count-num" id="vlRgC1">1</span>
+
+    <span class="vl-rg-count-num" id="vlRgCV">VUR!</span>
+
+  </div>
+
+</div>
+
+<div class="vl-rg-screen vl-rg-screen-game">
+
+  <div class="vl-rg-game-inner" id="vlRgGameInner" data-shake="off">
+
+    <svg class="vl-rg-stadium" viewBox="0 0 400 300" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+
+      <defs>
+
+        <linearGradient id="vlRgSky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#050816"/><stop offset="0.5" stop-color="#151040"/><stop offset="1" stop-color="#2a1a4a"/></linearGradient>
+
+        <radialGradient id="vlRgLight" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#fff7d6" stop-opacity="0.95"/><stop offset="0.25" stop-color="#ffe9a0" stop-opacity="0.4"/><stop offset="1" stop-color="#ffe9a0" stop-opacity="0"/></radialGradient>
+
+        <linearGradient id="vlRgGrass" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#23863f"/><stop offset="1" stop-color="#0a3519"/></linearGradient>
+
+        <pattern id="vlRgStripes" width="40" height="300" patternUnits="userSpaceOnUse"><rect width="20" height="300" fill="rgba(255,255,255,0.05)"/></pattern>
+
+        <pattern id="vlRgCrowd" width="8" height="7" patternUnits="userSpaceOnUse"><circle cx="2" cy="2.2" r="1.5" fill="#3b2f6b"/><circle cx="6" cy="5.6" r="1.5" fill="#55449a"/></pattern>
+
+      </defs>
+
+      <rect width="400" height="300" fill="url(#vlRgSky)"/>
+
+      <g fill="#ffffff" opacity="0.55">
+
+        <circle cx="60" cy="18" r="0.8"/><circle cx="130" cy="34" r="0.6"/><circle cx="182" cy="12" r="0.9"/><circle cx="236" cy="28" r="0.6"/><circle cx="290" cy="16" r="0.8"/><circle cx="342" cy="40" r="0.6"/><circle cx="160" cy="58" r="0.5"/><circle cx="252" cy="62" r="0.5"/>
+
+      </g>
+
+      <path d="M0 108 Q200 78 400 108 L400 152 L0 152 Z" fill="#120d2a"/>
+
+      <path d="M0 112 Q200 84 400 112 L400 148 L0 148 Z" fill="url(#vlRgCrowd)"/>
+
+      <g>
+
+        <rect x="148" y="40" width="2.4" height="62" fill="#0b0f24"/>
+
+        <rect x="138" y="32" width="22" height="9" rx="1.5" fill="#1e293b"/>
+
+        <circle class="vl-rg-stadium-light" cx="149" cy="36" r="30" fill="url(#vlRgLight)"/>
+
+        <rect x="250" y="40" width="2.4" height="62" fill="#0b0f24"/>
+
+        <rect x="240" y="32" width="22" height="9" rx="1.5" fill="#1e293b"/>
+
+        <circle class="vl-rg-stadium-light" cx="251" cy="36" r="30" fill="url(#vlRgLight)"/>
+
+      </g>
+
+      <rect y="150" width="400" height="8" fill="#0c4a2a"/>
+
+      <rect y="150" width="400" height="1.4" fill="#facc15" opacity="0.75"/>
+
+      <rect y="158" width="400" height="142" fill="url(#vlRgGrass)"/>
+
+      <rect y="158" width="400" height="142" fill="url(#vlRgStripes)"/>
+
+      <ellipse cx="200" cy="312" rx="250" ry="80" fill="#8a5a33" opacity="0.5"/>
+
+      <path d="M0 290 L400 250" stroke="rgba(255,255,255,0.35)" stroke-width="1.2"/>
+
+    </svg>
+
+    <div class="vl-rg-game-hud">
+
+      <div class="vl-rg-game-hud-pill" id="vlRgRoundPill">1 / 3 ATIŞ</div>
+
+      <div class="vl-rg-game-hud-stats">
+
+        <div class="vl-rg-game-hud-score" id="vlRgScorePill" data-bump="off">0 PUAN</div>
+
+        <div class="vl-rg-game-hud-lives" id="vlRgLives" aria-hidden="true"></div>
+
+      </div>
+
+    </div>
+
+    <div class="vl-rg-game-toast" id="vlRgToast" data-show="false" data-tier="miss"></div>
+
+    <div class="vl-rg-field">
+
+      <div class="vl-rg-batter">
+
+        <svg class="vl-rg-batter-svg" viewBox="0 0 70 110" aria-hidden="true">
+
+          <defs>
+
+            <linearGradient id="vlRgJersey" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#b8c4d6"/></linearGradient>
+
+            <linearGradient id="vlRgPants" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e2e8f0"/><stop offset="1" stop-color="#8b9ab0"/></linearGradient>
+
+            <linearGradient id="vlRgHelmet" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#34f5a0"/><stop offset="1" stop-color="#00804a"/></linearGradient>
+
+            <radialGradient id="vlRgSkin" cx="0.4" cy="0.35" r="0.7"><stop offset="0" stop-color="#ffd7b5"/><stop offset="1" stop-color="#d0895c"/></radialGradient>
+
+          </defs>
+
+          <ellipse cx="36" cy="106" rx="24" ry="3.6" fill="rgba(0,0,0,0.4)"/>
+
+          <path d="M27 70 L19 102 L27 103.5 L34 74 Z" fill="url(#vlRgPants)"/>
+
+          <path d="M38 70 L47 101 L55 100.5 L45 70 Z" fill="url(#vlRgPants)"/>
+
+          <path d="M15 101 H28 A2.8 2.8 0 0 1 28 106.6 H14 Q13 104 15 101 Z" fill="#1e293b"/>
+
+          <path d="M45 99.6 H57 Q60 102 58 105.4 H45 Z" fill="#1e293b"/>
+
+          <path d="M24 41 Q21.5 56 25 72 L46 72 Q48.5 56 45 41 Q34.5 35.5 24 41 Z" fill="url(#vlRgJersey)"/>
+
+          <path d="M24.4 46 Q34.5 42 45 46" stroke="#00a85c" stroke-width="1.6" fill="none"/>
+
+          <text x="30.5" y="63" font-size="11" font-weight="900" fill="#00804a" font-family="system-ui, sans-serif">7</text>
+
+          <rect x="24.6" y="68" width="21" height="4.2" rx="1" fill="#0f172a"/>
+
+          <rect x="33.4" y="68.6" width="3.4" height="3" rx="0.6" fill="#facc15"/>
+
+          <path d="M28 44 Q29 57 41 56" stroke="url(#vlRgJersey)" stroke-width="6.2" stroke-linecap="round" fill="none"/>
+
+          <path d="M41.5 44 Q49 50 43.5 56" stroke="#d6dee9" stroke-width="6" stroke-linecap="round" fill="none"/>
+
+          <circle cx="42" cy="55.5" r="3.8" fill="#0f172a"/>
+
+          <circle cx="40.8" cy="54.4" r="1.1" fill="rgba(255,255,255,0.35)"/>
+
+          <rect x="31" y="33" width="7.4" height="6.5" rx="2" fill="url(#vlRgSkin)"/>
+
+          <circle cx="35.5" cy="26" r="9.6" fill="url(#vlRgSkin)"/>
+
+          <circle cx="41.6" cy="27.2" r="1.25" fill="#1e293b"/>
+
+          <path d="M39.6 31.4 Q41.6 32.6 43.6 31.2" stroke="#7a3e22" stroke-width="0.9" fill="none" stroke-linecap="round"/>
+
+          <path d="M25.4 27 Q24.8 14.2 36 14 Q46.4 14 46.6 24 L53 25.6 Q53.4 27.4 51.6 27.6 L45.8 27.4 Q44 22.6 36 22.6 L26.6 28.4 Z" fill="url(#vlRgHelmet)"/>
+
+          <circle cx="31.4" cy="27.4" r="3.6" fill="#00804a"/>
+
+          <path d="M29.6 18 Q34.4 15.2 39.6 16" stroke="rgba(255,255,255,0.65)" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+
+        </svg>
+
+        <div class="vl-rg-bat-wrap" id="vlRgBatWrap">
+
+          <div class="vl-rg-sweet"></div>
+
+          <div class="vl-rg-bat">
+
+            <svg viewBox="0 0 12 60" preserveAspectRatio="none" aria-hidden="true">
+
+              <defs>
+
+                <linearGradient id="vlRgBatWood" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#7c4a1e"/><stop offset="0.45" stop-color="#f0b469"/><stop offset="1" stop-color="#8a5a2b"/></linearGradient>
+
+              </defs>
+
+              <path d="M4.7 56 L4.4 30 Q2.8 10 3.3 4 Q6 0 8.7 4 Q9.2 10 7.6 30 L7.3 56 Z" fill="url(#vlRgBatWood)"/>
+
+              <rect x="4.4" y="43" width="3.2" height="12" rx="0.5" fill="#1e293b"/>
+
+              <path d="M4.4 45 L7.6 46.5 M4.4 48 L7.6 49.5 M4.4 51 L7.6 52.5" stroke="rgba(255,255,255,0.2)" stroke-width="0.5"/>
+
+              <ellipse cx="6" cy="57.4" rx="2.7" ry="1.7" fill="#5b3413"/>
+
+              <path d="M4.9 6 Q4.5 18 5.3 28" stroke="rgba(255,255,255,0.55)" stroke-width="0.8" fill="none" stroke-linecap="round"/>
+
+            </svg>
+
+          </div>
+
+        </div>
+
+      </div>
+
+      <div class="vl-rg-ball-track" id="vlRgBallTrack" data-zone="">
+
+        <div class="vl-rg-track-barem" aria-hidden="true">
+
+          <div class="vl-rg-track-barem-good"></div>
+
+          <div class="vl-rg-track-barem-perfect"></div>
+
+          <div class="vl-rg-track-barem-line"></div>
+
+          <span class="vl-rg-track-barem-cap">▼ VURUŞ NOKTASI</span>
+
+        </div>
+
+        <div class="vl-rg-game-ball-shell" id="vlRgGameBall" data-travel="off" data-hit="">
+
+          <div class="vl-rg-game-ball">
+
+            <svg viewBox="0 0 20 20" aria-hidden="true">
+
+              <defs>
+
+                <radialGradient id="vlRgBallGrad" cx="0.35" cy="0.3" r="0.75"><stop offset="0" stop-color="#ffffff"/><stop offset="0.6" stop-color="#eef2f7"/><stop offset="1" stop-color="#9aa3b2"/></radialGradient>
+
+              </defs>
+
+              <circle cx="10" cy="10" r="9.4" fill="url(#vlRgBallGrad)"/>
+
+              <path d="M5 2.6 Q9.2 10 5 17.4" stroke="#e11d48" stroke-width="1" fill="none" stroke-dasharray="1.3 1"/>
+
+              <path d="M15 2.6 Q10.8 10 15 17.4" stroke="#e11d48" stroke-width="1" fill="none" stroke-dasharray="1.3 1"/>
+
+              <ellipse cx="7" cy="6" rx="2.4" ry="1.4" fill="rgba(255,255,255,0.8)"/>
+
+            </svg>
+
+          </div>
+
+        </div>
+
+      </div>
+
+      <div class="vl-rg-meter" aria-hidden="true">
+
+        <div class="vl-rg-meter-bar" id="vlRgMeterBar">
+
+          <div class="vl-rg-meter-good"></div>
+
+          <div class="vl-rg-meter-perfect"></div>
+
+          <div class="vl-rg-meter-marks" id="vlRgMeterMarks"></div>
+
+          <div class="vl-rg-meter-needle" id="vlRgMeterNeedle"></div>
+
+        </div>
+
+        <div class="vl-rg-meter-labels"><span>◀ GEÇ</span><span>ZAMANLAMA</span><span>ERKEN ▶</span></div>
+
+      </div>
+
+    </div>
+
+    <div class="vl-rg-hit-row">
+
+      <button type="button" class="vl-rg-btn-hit" id="vlRgHitBtn">VUR!</button>
+
+      <p class="vl-rg-hint">Ekrana dokun, tıkla ya da BOŞLUK tuşuna bas</p>
+
+    </div>
+
+  </div>
+
+</div>
+
+<div class="vl-rg-screen vl-rg-screen-result" id="vlRgResultScreen" data-result="miss">
+
+  <div class="vl-rg-result-inner" id="vlRgResultPanel">
+
+    <div class="vl-rg-fx" id="vlRgFx"></div>
+
+    <div class="vl-rg-res-badge" aria-hidden="true">
+
+      <svg class="vl-rg-badge-high" viewBox="0 0 80 80">
+
+        <defs>
+
+          <linearGradient id="vlRgGold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff3b0"/><stop offset="0.5" stop-color="#ffd700"/><stop offset="1" stop-color="#b8860b"/></linearGradient>
+
+        </defs>
+
+        <path d="M22 14 H58 V30 Q58 48 40 50 Q22 48 22 30 Z" fill="url(#vlRgGold)"/>
+
+        <path d="M22 18 H12 Q12 34 24 36" stroke="url(#vlRgGold)" stroke-width="4" fill="none"/>
+
+        <path d="M58 18 H68 Q68 34 56 36" stroke="url(#vlRgGold)" stroke-width="4" fill="none"/>
+
+        <rect x="36" y="49" width="8" height="10" fill="#d4a017"/>
+
+        <rect x="26" y="58" width="28" height="8" rx="2" fill="url(#vlRgGold)"/>
+
+        <rect x="22" y="65" width="36" height="6" rx="2" fill="#8a6408"/>
+
+        <path d="M40 22 l2.6 5.4 5.9 0.8 -4.3 4.1 1 5.9 -5.2 -2.8 -5.2 2.8 1 -5.9 -4.3 -4.1 5.9 -0.8 z" fill="#fff8d0"/>
+
+        <path d="M27 18 Q26 30 31 40" stroke="rgba(255,255,255,0.6)" stroke-width="2" fill="none" stroke-linecap="round"/>
+
+      </svg>
+
+      <svg class="vl-rg-badge-mid" viewBox="0 0 80 80">
+
+        <defs>
+
+          <linearGradient id="vlRgSilver" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="0.5" stop-color="#cbd5e1"/><stop offset="1" stop-color="#64748b"/></linearGradient>
+
+        </defs>
+
+        <path d="M28 6 L40 30 L52 6 Z" fill="#00c266"/>
+
+        <path d="M28 6 L34 6 L44 26 L40 30 Z" fill="#00804a"/>
+
+        <circle cx="40" cy="48" r="22" fill="url(#vlRgSilver)"/>
+
+        <circle cx="40" cy="48" r="16.5" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="1.5"/>
+
+        <path d="M40 36 l3.5 7.2 7.9 1.1 -5.7 5.5 1.4 7.9 -7.1 -3.7 -7.1 3.7 1.4 -7.9 -5.7 -5.5 7.9 -1.1 z" fill="#475569"/>
+
+      </svg>
+
+      <svg class="vl-rg-badge-low" viewBox="0 0 80 80">
+
+        <defs>
+
+          <radialGradient id="vlRgSadBall" cx="0.35" cy="0.3" r="0.75"><stop offset="0" stop-color="#ffffff"/><stop offset="0.6" stop-color="#e2e8f0"/><stop offset="1" stop-color="#8b94a3"/></radialGradient>
+
+        </defs>
+
+        <circle cx="40" cy="42" r="26" fill="url(#vlRgSadBall)"/>
+
+        <path d="M26 20 Q38 42 26 64" stroke="#e11d48" stroke-width="2" fill="none" stroke-dasharray="3 2.4"/>
+
+        <path d="M54 20 Q42 42 54 64" stroke="#e11d48" stroke-width="2" fill="none" stroke-dasharray="3 2.4"/>
+
+        <circle cx="33" cy="38" r="2.6" fill="#334155"/>
+
+        <circle cx="47" cy="38" r="2.6" fill="#334155"/>
+
+        <path d="M32 54 Q40 47 48 54" stroke="#334155" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+
+        <path d="M62 14 Q66 22 62 26 Q58 22 62 14 Z" fill="#60a5fa"/>
+
+      </svg>
+
+    </div>
+
+    <h2 class="vl-rg-res-title" id="vlRgResTitle">KAÇIRDIN!</h2>
+
+    <p class="vl-rg-res-sub" id="vlRgResSub">Üzülme, bir daha dene!</p>
+
+    <div class="vl-rg-res-breakdown" id="vlRgBreakdown" hidden></div>
+
+    <div class="vl-rg-coupon">
+
+      <div class="vl-rg-coupon-label">Ödül kodu</div>
+
+      <div class="vl-rg-coupon-code" id="vlRgCouponCode">TEKRARDENE</div>
+
+      <button type="button" class="vl-rg-btn-copy" id="vlRgCopyBtn" data-copied="false">KODU KOPYALA</button>
+
+    </div>
+
+    <div class="vl-rg-result-actions">
+
+      <button type="button" class="vl-rg-btn-primary" id="vlRgReplayBtn">TEKRAR OYNA</button>
+
+      <button type="button" class="vl-rg-btn-secondary" id="vlRgCloseBtn">KAPAT</button>
+
+    </div>
+
+  </div>
+
+</div>
+
+`;
+
+
+
+    document.body.appendChild(overlay);
+
+
+
+    const elScreen = (name) => {
+
+        overlay.dataset.screen = name;
+
+    };
+
+    const startBtn = overlay.querySelector("#vlRgStartBtn");
+
+    const countNums = [
+
+        overlay.querySelector("#vlRgC3"),
+
+        overlay.querySelector("#vlRgC2"),
+
+        overlay.querySelector("#vlRgC1"),
+
+        overlay.querySelector("#vlRgCV")
+
+    ];
+
+    const ballTrack = overlay.querySelector("#vlRgBallTrack");
+
+    const gameBall = overlay.querySelector("#vlRgGameBall");
+
+    const batWrap = overlay.querySelector("#vlRgBatWrap");
+
+    const resultScreen = overlay.querySelector("#vlRgResultScreen");
+
+    const resTitle = overlay.querySelector("#vlRgResTitle");
+
+    const resSub = overlay.querySelector("#vlRgResSub");
+
+    const couponCode = overlay.querySelector("#vlRgCouponCode");
+
+    const fxLayer = overlay.querySelector("#vlRgFx");
+
+    const replayBtn = overlay.querySelector("#vlRgReplayBtn");
+
+    const closeBtn = overlay.querySelector("#vlRgCloseBtn");
+
+    const roundPill = overlay.querySelector("#vlRgRoundPill");
+
+    const livesRow = overlay.querySelector("#vlRgLives");
+
+    const toastEl = overlay.querySelector("#vlRgToast");
+
+    const breakdownEl = overlay.querySelector("#vlRgBreakdown");
+
+    const gameInner = overlay.querySelector("#vlRgGameInner");
+
+    const scorePill = overlay.querySelector("#vlRgScorePill");
+
+    const meterBar = overlay.querySelector("#vlRgMeterBar");
+
+    const meterNeedle = overlay.querySelector("#vlRgMeterNeedle");
+
+    const meterMarks = overlay.querySelector("#vlRgMeterMarks");
+
+    const copyBtn = overlay.querySelector("#vlRgCopyBtn");
+
+    const xBtn = overlay.querySelector("#vlRgXBtn");
+
+
+
+    const sfx = (() => {
+
+        let ctx = null;
+
+        let master = null;
+
+        const ensure = () => {
+
+            if (ctx) {
+
+                if (ctx.state === "suspended") ctx.resume().catch(() => {});
+
+                return ctx;
+
+            }
+
+            try {
+
+                const AC = window.AudioContext || window.webkitAudioContext;
+
+                if (!AC) return null;
+
+                ctx = new AC();
+
+                master = ctx.createGain();
+
+                master.gain.value = 0.55;
+
+                master.connect(ctx.destination);
+
+            } catch {
+
+                ctx = null;
+
+            }
+
+            return ctx;
+
+        };
+
+        const tone = (freq, dur, opts = {}) => {
+
+            const c = ensure();
+
+            if (!c) return;
+
+            try {
+
+                const t = c.currentTime + (opts.delay || 0);
+
+                const osc = c.createOscillator();
+
+                const g = c.createGain();
+
+                osc.type = opts.type || "sine";
+
+                osc.frequency.setValueAtTime(freq, t);
+
+                if (opts.to) osc.frequency.exponentialRampToValueAtTime(opts.to, t + dur);
+
+                g.gain.setValueAtTime(0.0001, t);
+
+                g.gain.exponentialRampToValueAtTime(opts.vol || 0.3, t + 0.012);
+
+                g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+
+                osc.connect(g);
+
+                g.connect(master);
+
+                osc.start(t);
+
+                osc.stop(t + dur + 0.05);
+
+            } catch {}
+
+        };
+
+        const noise = (dur, opts = {}) => {
+
+            const c = ensure();
+
+            if (!c) return;
+
+            try {
+
+                const t = c.currentTime + (opts.delay || 0);
+
+                const len = Math.max(1, Math.floor(c.sampleRate * dur));
+
+                const buf = c.createBuffer(1, len, c.sampleRate);
+
+                const data = buf.getChannelData(0);
+
+                for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
+
+                const src = c.createBufferSource();
+
+                src.buffer = buf;
+
+                const filter = c.createBiquadFilter();
+
+                filter.type = opts.filter || "bandpass";
+
+                filter.frequency.setValueAtTime(opts.freq || 1000, t);
+
+                if (opts.freqTo) filter.frequency.exponentialRampToValueAtTime(opts.freqTo, t + dur);
+
+                filter.Q.value = opts.q || 1;
+
+                const g = c.createGain();
+
+                g.gain.setValueAtTime(0.0001, t);
+
+                g.gain.exponentialRampToValueAtTime(opts.vol || 0.3, t + (opts.attack || 0.005));
+
+                g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+
+                src.connect(filter);
+
+                filter.connect(g);
+
+                g.connect(master);
+
+                src.start(t);
+
+                src.stop(t + dur + 0.05);
+
+            } catch {}
+
+        };
+
+        return {
+
+            unlock: ensure,
+
+            click: () => tone(660, 0.09, { type: "triangle", vol: 0.18, to: 880 }),
+
+            count: () => tone(523, 0.16, { type: "square", vol: 0.1 }),
+
+            go: () => {
+
+                tone(784, 0.12, { type: "square", vol: 0.12 });
+
+                tone(1046, 0.28, { type: "square", vol: 0.12, delay: 0.1 });
+
+            },
+
+            swing: () => noise(0.22, { freq: 500, freqTo: 2600, q: 0.8, vol: 0.3, attack: 0.06 }),
+
+            perfect: () => {
+
+                noise(0.07, { filter: "highpass", freq: 2400, vol: 0.7 });
+
+                tone(1500, 0.12, { type: "triangle", vol: 0.32, to: 900 });
+
+                noise(1.3, { freq: 900, q: 0.4, vol: 0.14, attack: 0.3, delay: 0.08 });
+
+                tone(880, 0.14, { type: "triangle", vol: 0.16, delay: 0.12 });
+
+                tone(1318, 0.26, { type: "triangle", vol: 0.16, delay: 0.24 });
+
+            },
+
+            good: () => {
+
+                noise(0.06, { filter: "highpass", freq: 1500, vol: 0.45 });
+
+                tone(640, 0.16, { type: "triangle", vol: 0.28, to: 420 });
+
+            },
+
+            miss: () => tone(220, 0.38, { type: "sawtooth", vol: 0.12, to: 100 }),
+
+            win: () => [523, 659, 784, 1046].forEach((f, i) => tone(f, 0.3, { type: "triangle", vol: 0.2, delay: i * 0.11 })),
+
+            lose: () => [392, 330, 262].forEach((f, i) => tone(f, 0.32, { type: "sine", vol: 0.18, delay: i * 0.17 })),
+
+            close: () => {
+
+                if (!ctx) return;
+
+                try {
+
+                    ctx.close().catch(() => {});
+
+                } catch {}
+
+                ctx = null;
+
+            }
+
+        };
+
+    })();
+
+
+
+    let rafId = null;
+
+    let gameStart = 0;
+
+    let settled = false;
+
+    let inputAbort = null;
+
+    let roundIndex = 0;
+
+    let score = 0;
+
+    let pitchDuration = CONFIG.ballDuration;
+
+    const sessionTiers = [];
+
+    let betweenRoundTimer = null;
+
+    let countdownTimer = null;
+
+    let resizeRaf = null;
+
+    const metrics = {
+
+        trackW: 0,
+
+        ballW: 0,
+
+        barW: 0
+
+    };
+
+
+
+    const clearBetweenRound = () => {
+
+        if (betweenRoundTimer !== null) {
+
+            clearTimeout(betweenRoundTimer);
+
+            betweenRoundTimer = null;
+
+        }
+
+    };
+
+
+
+    const clearCountdown = () => {
+
+        if (countdownTimer !== null) {
+
+            clearTimeout(countdownTimer);
+
+            countdownTimer = null;
+
+        }
+
+    };
+
+
+
+    const clearGameLoop = () => {
+
+        if (rafId !== null) {
+
+            cancelAnimationFrame(rafId);
+
+            rafId = null;
+
+        }
+
+    };
+
+
+
+    const teardownGameInput = () => {
+
+        if (inputAbort) {
+
+            inputAbort.abort();
+
+            inputAbort = null;
+
+        }
+
+    };
+
+
+
+    const buildLives = () => {
+
+        livesRow.innerHTML = "";
+
+        for (let i = 0; i < CONFIG.maxRounds; i++) {
+
+            const d = document.createElement("div");
+
+            d.className = "vl-rg-game-life";
+
+            d.dataset.used = "false";
+
+            d.dataset.current = i === 0 ? "true" : "false";
+
+            livesRow.appendChild(d);
+
+        }
+
+    };
+
+
+
+    const updateHud = () => {
+
+        roundPill.textContent = `${roundIndex + 1} / ${CONFIG.maxRounds} ATIŞ`;
+
+        const nodes = livesRow.querySelectorAll(".vl-rg-game-life");
+
+        nodes.forEach((node, i) => {
+
+            node.dataset.current = i === roundIndex && i >= sessionTiers.length ? "true" : "false";
+
+            node.dataset.used = i < roundIndex ? "true" : "false";
+
+            node.dataset.result = sessionTiers[i] || "";
+
+        });
+
+        scorePill.textContent = `${score} PUAN`;
+
+    };
+
+
+
+    const restartAnim = (el, key) => {
+
+        el.dataset[key] = "off";
+
+        void el.offsetWidth;
+
+        el.dataset[key] = "on";
+
+    };
+
+
+
+    const showToast = (tier, timing, points) => {
+
+        const labels = {
+
+            perfect: "MÜKEMMEL!",
+
+            good: "İYİ VURUŞ!",
+
+            miss: "KAÇTI!"
+
+        };
+
+        const sub = tier === "miss" ? (timing === "early" ? "Çok erken" : "Çok geç") : `+${points} puan`;
+
+        toastEl.dataset.tier = tier;
+
+        toastEl.innerHTML = `<span class="vl-rg-toast-main">${labels[tier]}</span><span class="vl-rg-toast-sub">${sub}</span>`;
+
+        toastEl.dataset.show = "false";
+
+        void toastEl.offsetWidth;
+
+        toastEl.dataset.show = "true";
+
+    };
+
+
+
+    const measure = () => {
+
+        metrics.trackW = ballTrack.clientWidth;
+
+        metrics.ballW = gameBall.offsetWidth;
+
+        metrics.barW = meterBar.clientWidth;
+
+    };
+
+
+
+    const offsetAt = (progress) => 1 - progress - CONFIG.targetNorm;
+
+    const meterPosAt = (progress) => Math.min(1, Math.max(0, 0.5 + offsetAt(progress) / (2 * CONFIG.meterRange)));
+
+
+
+    const tierFromProgress = (progress) => {
+
+        const d = Math.abs(offsetAt(progress));
+
+        if (d <= CONFIG.perfectHalfNorm) return "perfect";
+
+        if (d <= CONFIG.goodHalfNorm) return "good";
+
+        return "miss";
+
+    };
+
+
+
+    const ballXAt = (progress) => metrics.trackW * (1 - progress) - metrics.ballW / 2;
+
+
+
+    const placeBall = (progress) => {
+
+        gameBall.style.transform = `translate3d(${ballXAt(progress).toFixed(1)}px,0,0)`;
+
+        meterNeedle.style.transform = `translate3d(${(meterPosAt(progress) * metrics.barW).toFixed(1)}px,0,0)`;
+
+        const zone = tierFromProgress(progress);
+
+        if (ballTrack.dataset.zone !== zone) ballTrack.dataset.zone = zone;
+
+    };
+
+
+
+    const addMark = (progress, tier) => {
+
+        const mark = document.createElement("div");
+
+        mark.className = "vl-rg-meter-mark";
+
+        mark.dataset.tier = tier;
+
+        mark.style.left = `${(meterPosAt(progress) * 100).toFixed(2)}%`;
+
+        meterMarks.appendChild(mark);
+
+    };
+
+
+
+    const burstSparks = (tier, progress) => {
+
+        const host = document.createElement("div");
+
+        host.className = "vl-rg-sparks";
+
+        host.dataset.tier = tier;
+
+        host.style.left = `${(metrics.trackW * (1 - progress)).toFixed(1)}px`;
+
+        const n = tier === "perfect" ? 16 : 9;
+
+        for (let i = 0; i < n; i++) {
+
+            const s = document.createElement("div");
+
+            s.className = "vl-rg-spark";
+
+            const ang = (i / n) * Math.PI * 2;
+
+            const dist = (tier === "perfect" ? 3.2 : 2.2) + (i % 3) * 0.6;
+
+            s.style.setProperty("--tx", `${(Math.cos(ang) * dist).toFixed(2)}em`);
+
+            s.style.setProperty("--ty", `${(Math.sin(ang) * dist).toFixed(2)}em`);
+
+            host.appendChild(s);
+
+        }
+
+        ballTrack.appendChild(host);
+
+        window.setTimeout(() => host.remove(), 750);
+
+    };
+
+
+
+    const buildFx = (kind) => {
+
+        fxLayer.innerHTML = "";
+
+        if (kind === "miss") {
+
+            const mb = document.createElement("div");
+
+            mb.className = "vl-rg-miss-ball";
+
+            fxLayer.appendChild(mb);
+
+            return;
+
+        }
+
+        const n = kind === "perfect" ? 30 : 18;
+
+        for (let i = 0; i < n; i++) {
+
+            const p = document.createElement("div");
+
+            p.className = "vl-rg-particle";
+
+            const ang = (i / n) * Math.PI * 2;
+
+            const dist = kind === "perfect" ? 8 + (i % 5) : 6 + (i % 4);
+
+            p.style.setProperty("--tx", `${Math.cos(ang) * dist}em`);
+
+            p.style.setProperty("--ty", `${Math.sin(ang) * dist - 2}em`);
+
+            p.style.animationDelay = `${(i * 0.03).toFixed(2)}s`;
+
+            fxLayer.appendChild(p);
+
+        }
+
+    };
+
+
+
+    const resetSession = () => {
+
+        sessionTiers.length = 0;
+
+        roundIndex = 0;
+
+        score = 0;
+
+        meterMarks.innerHTML = "";
+
+        toastEl.dataset.show = "false";
+
+        gameBall.dataset.hit = "";
+
+        gameBall.dataset.travel = "off";
+
+        ballTrack.dataset.zone = "";
+
+        ballTrack.querySelectorAll(".vl-rg-sparks").forEach((s) => s.remove());
+
+        batWrap.dataset.state = "";
+
+        buildLives();
+
+        updateHud();
+
+    };
+
+
+
+    const hitCountFromSession = () => sessionTiers.filter((t) => t === "perfect" || t === "good").length;
+
+    const hitPercent = () => Math.round((hitCountFromSession() / CONFIG.maxRounds) * 100);
+
+
+
+    const showSummaryResult = () => {
+
+        settled = true;
+
+        clearGameLoop();
+
+        teardownGameInput();
+
+        clearBetweenRound();
+
+        gameBall.dataset.travel = "off";
+
+        const pct = hitPercent();
+
+        const perfectN = sessionTiers.filter((t) => t === "perfect").length;
+
+        const goodN = sessionTiers.filter((t) => t === "good").length;
+
+        const missN = sessionTiers.filter((t) => t === "miss").length;
+
+        breakdownEl.hidden = false;
+
+        breakdownEl.innerHTML = `
+
+<span><span>İsabet</span><span>%${pct}</span></span>
+
+<span><span>Mükemmel</span><span>${perfectN}</span></span>
+
+<span><span>İyi</span><span>${goodN}</span></span>
+
+<span><span>Kaçan</span><span>${missN}</span></span>
+
+<span><span>Toplam puan</span><span>${score}</span></span>
+
+`;
+
+        let title = "BU SEFER OLMADI";
+
+        let sub = `${CONFIG.maxRounds} atıştan ${hitCountFromSession()} isabetli vuruş. Bir daha dene!`;
+
+        let code = "TEKRARDENE";
+
+        if (pct >= 67) {
+
+            title = "ŞİDDETLİ İSABET!";
+
+            sub = `%${pct} isabet — %30 İndirim kazandın!`;
+
+            code = "MUKEMMEL30";
+
+        } else if (pct >= 33) {
+
+            title = "İDARE EDER!";
+
+            sub = `%${pct} isabet — %15 İndirim kazandın!`;
+
+            code = "IYI15";
+
+        }
+
+        resultScreen.dataset.result = "summary";
+
+        if (pct >= 67) resultScreen.dataset.grade = "high";
+
+        else if (pct >= 33) resultScreen.dataset.grade = "mid";
+
+        else resultScreen.dataset.grade = "low";
+
+        resTitle.textContent = title;
+
+        resSub.textContent = sub;
+
+        couponCode.textContent = code;
+
+        copyBtn.dataset.copied = "false";
+
+        copyBtn.textContent = "KODU KOPYALA";
+
+        const fxKind = pct >= 67 ? "perfect" : pct >= 33 ? "good" : "miss";
+
+        buildFx(fxKind);
+
+        if (fxKind === "miss") sfx.lose();
+
+        else sfx.win();
+
+        elScreen("result");
+
+    };
+
+
+
+    const finishMiss = () => {
+
+        if (settled) return;
+
+        addMark(1, "miss");
+
+        completeRound("miss", "late", 1);
+
+    };
+
+
+
+    const resolveHit = (progress) => {
+
+        if (settled) return;
+
+        const tier = tierFromProgress(progress);
+
+        restartAnim(batWrap, "state");
+
+        batWrap.dataset.state = "swinging";
+
+        sfx.swing();
+
+        placeBall(progress);
+
+        addMark(progress, tier);
+
+        completeRound(tier, offsetAt(progress) > 0 ? "early" : "late", progress);
+
+    };
+
+
+
+    const completeRound = (tier, timing, progress) => {
+
+        settled = true;
+
+        clearGameLoop();
+
+        teardownGameInput();
+
+        gameBall.dataset.travel = "off";
+
+        gameBall.dataset.hit = tier;
+
+        ballTrack.dataset.zone = "";
+
+        const points = CONFIG.points[tier];
+
+        score += points;
+
+        sessionTiers.push(tier);
+
+        showToast(tier, timing, points);
+
+        updateHud();
+
+        if (tier === "miss") {
+
+            sfx.miss();
+
+        } else {
+
+            burstSparks(tier, progress);
+
+            restartAnim(scorePill, "bump");
+
+            if (tier === "perfect") {
+
+                sfx.perfect();
+
+                restartAnim(gameInner, "shake");
+
+            } else {
+
+                sfx.good();
+
+            }
+
+        }
+
+        if (sessionTiers.length >= CONFIG.maxRounds) {
+
+            clearBetweenRound();
+
+            betweenRoundTimer = window.setTimeout(() => {
+
+                showSummaryResult();
+
+            }, CONFIG.betweenRoundMs + 200);
+
+            return;
+
+        }
+
+        clearBetweenRound();
+
+        betweenRoundTimer = window.setTimeout(() => {
+
+            roundIndex = sessionTiers.length;
+
+            updateHud();
+
+            startPitch();
+
+        }, CONFIG.betweenRoundMs);
+
+    };
+
+
+
+    const gameLoop = (now) => {
+
+        if (settled) return;
+
+        const progress = Math.max(0, (now - gameStart) / pitchDuration);
+
+        if (progress >= 1) {
+
+            placeBall(1);
+
+            finishMiss();
+
+            return;
+
+        }
+
+        placeBall(progress);
+
+        rafId = requestAnimationFrame(gameLoop);
+
+    };
+
+
+
+    const startPitch = () => {
+
+        settled = false;
+
+        pitchDuration = Math.round(CONFIG.ballDuration * Math.pow(CONFIG.speedUpPerRound, roundIndex));
+
+        batWrap.dataset.state = "";
+
+        gameBall.dataset.hit = "";
+
+        gameBall.dataset.travel = "on";
+
+        measure();
+
+        placeBall(0);
+
+        gameStart = performance.now();
+
+        clearGameLoop();
+
+        rafId = requestAnimationFrame(gameLoop);
+
+        teardownGameInput();
+
+        inputAbort = new AbortController();
+
+        const sig = inputAbort.signal;
+
+
+
+        const tryHit = () => {
+
+            if (settled) return;
+
+            resolveHit(Math.min(1, (performance.now() - gameStart) / pitchDuration));
+
+        };
+
+
+
+        gameInner.addEventListener(
+
+            "pointerdown",
+
+            (ev) => {
+
+                if (ev.button > 0) return;
+
+                tryHit();
+
+            },
+
+            { signal: sig }
+
+        );
+
+
+
+        window.addEventListener(
+
+            "keydown",
+
+            (ev) => {
+
+                if (ev.code !== "Space" && ev.key !== " " && ev.key !== "Enter") return;
+
+                ev.preventDefault();
+
+                if (ev.repeat) return;
+
+                tryHit();
+
+            },
+
+            { signal: sig }
+
+        );
+
+    };
+
+
+
+    const startGameplay = () => {
+
+        if (document.activeElement && overlay.contains(document.activeElement)) document.activeElement.blur();
+
+        startPitch();
+
+    };
+
+
+
+    const runCountdown = () => {
+
+        clearCountdown();
+
+        clearBetweenRound();
+
+        clearGameLoop();
+
+        teardownGameInput();
+
+        resetSession();
+
+        elScreen("countdown");
+
+        countNums.forEach((n) => {
+
+            n.removeAttribute("data-phase");
+
+            void n.offsetWidth;
+
+        });
+
+        const showStep = (idx) => {
+
+            if (idx >= countNums.length) {
+
+                countdownTimer = null;
+
+                elScreen("game");
+
+                startGameplay();
+
+                return;
+
+            }
+
+            const node = countNums[idx];
+
+            node.removeAttribute("data-phase");
+
+            void node.offsetWidth;
+
+            node.dataset.phase = "show";
+
+            if (idx === countNums.length - 1) sfx.go();
+
+            else sfx.count();
+
+            countdownTimer = window.setTimeout(() => {
+
+                node.removeAttribute("data-phase");
+
+                showStep(idx + 1);
+
+            }, CONFIG.countdownDuration);
+
+        };
+
+        countdownTimer = window.setTimeout(() => showStep(0), 50);
+
+    };
+
+
+
+    const onResize = () => {
+
+        if (resizeRaf !== null) return;
+
+        resizeRaf = requestAnimationFrame(() => {
+
+            resizeRaf = null;
+
+            measure();
+
+        });
+
+    };
+
+
+
+    const closeGame = () => {
+
+        if (overlay.dataset.state === "closing") return;
+
+        clearCountdown();
+
+        clearBetweenRound();
+
+        clearGameLoop();
+
+        teardownGameInput();
+
+        if (resizeRaf !== null) {
+
+            cancelAnimationFrame(resizeRaf);
+
+            resizeRaf = null;
+
+        }
+
+        window.removeEventListener("resize", onResize);
+
+        overlay.dataset.state = "closing";
+
+    };
+
+
+
+    startBtn.addEventListener(
+
+        "click",
+
+        () => {
+
+            sfx.unlock();
+
+            sfx.click();
+
+            try {
+
+                const _vlc = "<%VLSendClickFunc%>";
+
+                if (_vlc.indexOf("<%") === -1) {
+
+                    new Function(_vlc)();
+
+                }
+
+            } catch {}
+
+            runCountdown();
+
+        },
+
+        { once: true }
+
+    );
+
+
+
+    replayBtn.addEventListener("click", () => {
+
+        if (overlay.dataset.screen !== "result") return;
+
+        sfx.click();
+
+        runCountdown();
+
+    });
+
+
+
+    copyBtn.addEventListener("click", () => {
+
+        const code = couponCode.textContent;
+
+        const done = () => {
+
+            copyBtn.dataset.copied = "true";
+
+            copyBtn.textContent = "KOPYALANDI ✓";
+
+            sfx.click();
+
+        };
+
+        const fallback = () => {
+
+            const ta = document.createElement("textarea");
+
+            ta.value = code;
+
+            ta.setAttribute("readonly", "");
+
+            ta.className = "vl-rg-copy-ta";
+
+            overlay.appendChild(ta);
+
+            ta.select();
+
+            try {
+
+                document.execCommand("copy");
+
+            } catch {}
+
+            ta.remove();
+
+            done();
+
+        };
+
+        if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(code).then(done, fallback);
+
+        else fallback();
+
+    });
+
+
+
+    closeBtn.addEventListener("click", closeGame);
+
+    xBtn.addEventListener("click", closeGame);
+
+    window.addEventListener("resize", onResize);
+
+
+
+    overlay.addEventListener("animationend", (ev) => {
+
+        if (ev.target === batWrap && ev.animationName === "vlRgBatSwing") {
+
+            batWrap.dataset.state = "";
+
+            return;
+
+        }
+
+        if (overlay.dataset.state === "closing" && ev.animationName === "vlRgOverlayOut") {
+
+            document.documentElement.style.overflow = prevHtmlOverflow;
+
+            document.body.style.overflow = prevBodyOverflow;
+
+            sfx.close();
+
+            overlay.remove();
+
+            styleEl.remove();
+
+        }
+
+    });
+
+
+
+    try {
+
+        const _vli = "<%VLSendImpressionFunc%>";
+
+        if (_vli.indexOf("<%") === -1) {
+
+            new Function(_vli)();
+
+        }
+
+    } catch {}
+
+}
+
+
+
+initVLRefleksGame();
+  </script>
+</body>
+
+</html>
